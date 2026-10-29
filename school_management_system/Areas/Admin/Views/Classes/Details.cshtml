@@ -1,0 +1,59 @@
+﻿@using school_management_system.Models.Domain
+@using school_management_system.Models.Enums
+@model SchoolClass
+@{
+    var cy = ViewData["ClassYear"] as ClassYear;
+    var subjects = (List<SubjectTeacherRow>)ViewData["Subjects"]!;
+    var students = (List<PersonRow>)ViewData["Students"]!;
+}
+<div class="page-head">
+    <div><h1>@ViewData["Title"]</h1><p>Current academic year overview.</p></div>
+    <div class="actions"><a class="btn" asp-action="Edit" asp-route-id="@Model.Id">Edit subjects</a><a class="btn" asp-action="Index">All classes</a></div>
+</div>
+@if (cy == null)
+{
+    <div class="alert info">This class has no record for the current academic year.</div>
+}
+else
+{
+    <div class="grid g2">
+        <div class="card">
+            <div class="card-head"><h2>Class coordinator</h2></div><div class="card-body">
+            <p>@(cy.CoordinatorTeacher?.User.FullName ?? "Not assigned")</p>
+            <form method="post" asp-action="SetCoordinator" class="form" style="display:flex;gap:8px">
+                <input type="hidden" name="classYearId" value="@cy.Id" />
+                <select name="teacherId" asp-items="(SelectList)ViewBag.Teachers"><option value="">— none —</option></select>
+                <button class="btn primary">Save</button>
+            </form>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-head"><h2>Subjects &amp; teachers</h2></div><div class="card-body flush table-wrap">
+        <table class="data"><tbody>@foreach (var s in subjects) {
+            <tr><td><b>@s.Name</b></td><td>@(s.Teacher ?? "—")</td></tr>
+        }
+    </tbody></table>
+</div>
+</div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Students (@students.Count)</h2></div><div class="card-body flush table-wrap">
+    @if (!students.Any())
+    {
+        <div class="empty">No students enrolled yet.</div>
+    }
+    else
+    {
+        <table class="data">
+            <thead><tr><th>Name</th><th>ID</th><th>Residence</th></tr></thead>
+            <tbody>
+                @foreach (var s in students)
+                {
+                    <tr><td><a asp-controller="Students" asp-action="Details" asp-route-id="@s.StudentId">@s.Name</a></td><td>@s.StudentNumber</td><td><span class="badge @(s.Residence == ResidenceType.Boarding ? "info" : "")">@s.Residence</span></td></tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+</div>
+}

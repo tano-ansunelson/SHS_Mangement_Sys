@@ -1,0 +1,23 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Scholar SHS</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="auth">
+        <section class="auth-art">
+            <div class="brand" style="border:0;padding:0"><div class="brand-mark" style="background:#fff;color:var(--ink)">S</div><div><strong style="color:#fff">Scholar SHS</strong></div></div>
+            <div>
+                <h1>One place for classes, results and boarding.</h1>
+                <p>Admin, teachers, hall masters and students each get a portal built for their work.</p>
+            </div>
+            <small style="color:#8b98a5">Senior High School Management System</small>
+        </section>
+        <section class="auth-form"><div class="auth-card">@RenderBody()</div></section>
+    </div>
+</body>
+</html>

@@ -1,0 +1,70 @@
+﻿@using school_management_system.Models.Enums
+@model List<StudentRow>
+@{
+    ViewData["Title"] = "Students";
+    var page = (int)ViewData["Page"]!; var pages = (int)ViewData["Pages"]!;
+    var q = ViewData["Q"] as string; var residence = ViewData["Residence"] as ResidenceType?; var status = (StudentStatus)ViewData["Status"]!;
+}
+<div class="page-head"><div><h1>Students</h1><p>@ViewData["Total"] student(s) match.</p></div><div class="actions"><a class="btn primary" asp-action="Create">Register student</a></div></div>
+<div class="card">
+    <form method="get" class="toolbar">
+        <input type="search" name="q" value="@q" placeholder="Name or student ID" />
+        <select name="courseId" asp-items="(SelectList)ViewBag.Courses"><option value="">All courses</option></select>
+        <select name="classYearId" asp-items="(SelectList)ViewBag.Classes"><option value="">All classes</option></select>
+        <select name="residence"><option value="">Day &amp; boarding</option><option value="Day" selected="@(residence == ResidenceType.Day)">Day</option><option value="Boarding" selected="@(residence == ResidenceType.Boarding)">Boarding</option></select>
+        <select name="status"><option value="Active" selected="@(status == StudentStatus.Active)">Active</option><option value="Graduated" selected="@(status == StudentStatus.Graduated)">Graduated</option><option value="Withdrawn" selected="@(status == StudentStatus.Withdrawn)">Withdrawn</option></select>
+        <button class="btn">Filter</button><a class="btn ghost" asp-action="Index">Reset</a>
+    </form>
+    <div class="card-body flush table-wrap">
+        @if (!Model.Any())
+        {
+            <div class="empty">No students found.</div>
+        }
+        else
+        {
+            <table class="data">
+                <thead><tr><th>Student</th><th>ID</th><th>Class</th><th>Course</th><th>Residence</th><th>Hall / room</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr>
+                            <td><a asp-action="Details" asp-route-id="@s.Id"><b>@s.Name</b></a></td>
+                            <td>@s.Number</td>
+                            <td>@(s.Class ?? "—")</td>
+                            <td>@s.Course</td>
+                            <td><span class="badge @(s.Residence == ResidenceType.Boarding ? "info" : "")">@s.Residence</span></td>
+                            <td>
+                                @if (s.Hall != null)
+                                {
+                                    <span>@s.Hall</span> <span class="muted">· @(s.Room != null ? "Room " + s.Room : "no room yet")</span>
+                                }
+                                else
+                                {
+
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="right nowrap"><a class="btn sm" asp-action="Details" asp-route-id="@s.Id">Open</a> <a class="btn sm" asp-action="Edit" asp-route-id="@s.Id">Edit</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    @if (pages > 1)
+    {
+        <div class="toolbar" style="border-top:1px solid var(--line2);border-bottom:0;justify-content:space-between">
+            <span class="muted">Page  @pages</span>
+            <span class="actions">
+                @if (page > 1)
+                {
+                    <a class="btn sm" href="@Url.Action("Index", new { q, residence, status, page = page - 1 })">Previous</a>
+                }
+                @if (page < pages)
+                {
+                    <a class="btn sm" href="@Url.Action("Index", new { q, residence, status, page = page + 1 })">Next</a>
+                }
+            </span>
+        </div>
+    }
+</div>

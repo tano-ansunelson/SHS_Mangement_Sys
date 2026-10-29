@@ -1,0 +1,26 @@
+﻿@using school_management_system.Models.Domain
+@model HallVm
+@{
+    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit hall" : "New hall";
+}
+<div class="page-head"><div><h1>@ViewData["Title"]</h1></div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
+            <div asp-validation-summary="ModelOnly" class="field-validation-error"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="row2">
+                <div class="field"><label asp-for="Name"></label><input asp-for="Name" placeholder="e.g. Nkrumah Hall" /><span asp-validation-for="Name"></span></div>
+                <div class="field"><label asp-for="Gender">Housing</label><select asp-for="Gender"><option value="">Mixed / not specified</option><option value="Male">Boys</option><option value="Female">Girls</option></select></div>
+            </div>
+            @if (!edit)
+            {
+                <div class="row2">
+                    <div class="field"><label asp-for="RoomCount"></label><input asp-for="RoomCount" type="number" min="0" /><span asp-validation-for="RoomCount"></span><div class="hint">Rooms are numbered 1, 2, 3… You can add or rename rooms later.</div></div>
+                    <div class="field"><label asp-for="Capacity"></label><input asp-for="Capacity" type="number" min="1" /><span asp-validation-for="Capacity"></span><div class="hint">Applied to every new room; edit individual rooms afterwards.</div></div>
+                </div>
+            }
+            <div class="form-actions"><button class="btn primary">Save</button><a class="btn" asp-action="Index">Cancel</a></div>
+        </form>
+    </div>
+</div>

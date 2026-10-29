@@ -1,0 +1,71 @@
+﻿@using school_management_system.Models.Domain
+@using school_management_system.Models.Enums
+@model Student
+@{
+    var history = (List<EnrollmentRow>)ViewData["History"]!;
+    var results = (List<StudentResultRow>)ViewData["Results"]!;
+}
+<div class="page-head">
+    <div><h1>@Model.User.FullName</h1><p>@Model.StudentNumber · @Model.Course.Name · <span class="badge @(Model.Status == StudentStatus.Active ? "ok" : "warn")">@Model.Status</span></p></div>
+    <div class="actions">
+        <button class="btn" onclick="window.print()">Print record</button><a class="btn" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+        <form class="inline" method="post" asp-action="ResetPassword" asp-route-id="@Model.Id" data-confirm="Generate a new temporary password?"><button class="btn">Reset password</button></form>
+        @if (Model.Status == StudentStatus.Active)
+        {
+            <a class="btn link-danger" asp-action="Delete" asp-route-id="@Model.Id">Withdraw</a>
+        }
+    </div>
+</div>
+<div class="grid g2">
+    <div class="card">
+        <div class="card-head"><h2>Personal details</h2></div><div class="card-body">
+        <dl class="kv">
+            <dt>Email</dt>
+            <dd>@Model.User.Email</dd>
+            <dt>Gender</dt>
+            <dd>@Model.Gender</dd>
+            <dt>Date of birth</dt>
+            <dd>@Model.DateOfBirth.ToString("d MMM yyyy")</dd>
+            <dt>Residence</dt>
+            <dd>@Model.Residence</dd>
+            <dt>Guardian</dt>
+            <dd>@Model.GuardianName</dd>
+            <dt>Guardian phone</dt>
+            <dd>@Model.GuardianPhone</dd>
+        </dl>
+    </div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Enrollment history</h2></div><div class="card-body flush table-wrap">
+    <table class="data">
+        <thead><tr><th>Year</th><th>Class</th><th>Hall</th><th>Outcome</th></tr></thead>
+        <tbody>
+            @foreach (var h in history)
+            {
+                <tr><td>@h.Year</td><td>@h.Class</td><td>@(h.Hall != null ? h.Hall + (h.Room != null ? " · " + h.Room : "") : "—")</td><td><span class="badge @Ui.Outcome(h.Outcome)">@h.Outcome</span></td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+</div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Published results</h2></div><div class="card-body flush table-wrap">
+    @if (!results.Any())
+    {
+        <div class="empty">No published results yet.</div>
+    }
+    else
+    {
+        <table class="data">
+            <thead><tr><th>Year</th><th>Form</th><th>Semester</th><th>Exam</th><th>Subject</th><th>Teacher</th><th class="num">Class</th><th class="num">Exam</th><th class="num">Total</th><th>Grade</th></tr></thead>
+            <tbody>
+                @foreach (var r in results)
+                {
+                    <tr><td>@r.AcademicYear</td><td>@r.FormLevel</td><td>@r.Semester</td><td>@r.Assessment</td><td>@r.Subject</td><td>@(r.Teacher ?? "—")</td><td class="num">@r.ClassScore.ToString("0.#")</td><td class="num">@r.ExamScore.ToString("0.#")</td><td class="num"><b>@r.Total.ToString("0.#")</b></td><td><span class="badge">@r.Grade</span></td></tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+</div>

@@ -1,0 +1,23 @@
+﻿@model List<GradeBoundary>
+@{
+    ViewData["Title"] = "Grade scale";
+}
+<div class="page-head"><div><h1>Grade scale</h1><p>Total score (class + exam) to grade. A student gets the highest grade whose minimum they reach.</p></div><div class="actions"><a class="btn primary" asp-action="Create">Add grade</a></div></div>
+<div class="card">
+    <div class="card-body flush table-wrap">
+        <table class="data">
+            <thead><tr><th>From (min score)</th><th>Grade</th><th>Remark</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var g in Model)
+                {
+                    <tr>
+                        <td>@g.MinScore.ToString("0.#")</td>
+                        <td><span class="badge info">@g.Grade</span></td>
+                        <td>@g.Remark</td>
+                        <td class="right nowrap"><a class="btn sm" asp-action="Edit" asp-route-id="@g.Id">Edit</a> <a class="btn sm link-danger" asp-action="Delete" asp-route-id="@g.Id">Delete</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

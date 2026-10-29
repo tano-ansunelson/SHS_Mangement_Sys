@@ -1,0 +1,32 @@
+﻿@using school_management_system.Models.Domain
+@model List<ClassRow>
+@{
+    ViewData["Title"] = "Classes";
+}
+<div class="page-head"><div><h1>Classes</h1><p>Form 1 to 3 groups under each course.</p></div><div class="actions"><a class="btn primary" asp-action="Create">Add class</a></div></div>
+@if (!Model.Any())
+{
+    <div class="card empty">No classes yet. Add courses and subjects first, then create classes.</div>
+}
+@foreach (var course in Model.GroupBy(c => c.Course))
+{
+    <div class="card">
+        <div class="card-head"><h2>@course.Key</h2><span class="muted">@course.Count() class(es)</span></div>
+        <div class="card-body flush table-wrap">
+            <table class="data">
+                <thead><tr><th>Class</th><th class="num">Subjects</th><th class="num">Students</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var c in course)
+                    {
+                        <tr>
+                            <td><a asp-action="Details" asp-route-id="@c.Id"><b>Form @c.FormLevel @c.Group</b></a></td>
+                            <td class="num">@c.Subjects</td>
+                            <td class="num">@c.Students</td>
+                            <td class="right nowrap"><a class="btn sm" asp-action="Details" asp-route-id="@c.Id">Open</a> <a class="btn sm" asp-action="Edit" asp-route-id="@c.Id">Subjects</a> <a class="btn sm link-danger" asp-action="Delete" asp-route-id="@c.Id">Delete</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

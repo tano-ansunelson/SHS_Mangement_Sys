@@ -1,0 +1,29 @@
+﻿@using school_management_system.Models.Domain
+@model CourseVm
+@{
+    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit course" : "New course";
+}
+<div class="page-head"><div><h1>@ViewData["Title"]</h1></div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
+            <div asp-validation-summary="ModelOnly" class="field-validation-error"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="field"><label asp-for="Name">Course name</label><input asp-for="Name" placeholder="e.g. General Science" /><span asp-validation-for="Name"></span></div>
+            <div class="field">
+                <label>Default subjects for this course</label>
+                <div class="hint" style="margin-bottom:8px">New classes in this course start with these subjects. Class subject lists can still be adjusted per class.</div>
+                <label class="check" style="margin-bottom:8px;width:max-content"><input type="checkbox" data-all=".subj" /> Select all</label>
+                <div class="checks">@foreach (var s in Model.AllSubjects) {
+                    <label class="check"><input class="subj" type="checkbox" name="SubjectIds" value="@s.Id" checked="@Model.SubjectIds.Contains(s.Id)" /> @s.Name</label>
+                }
+            </div>
+            @if (!Model.AllSubjects.Any())
+            {
+                <div class="muted">Add subjects first.</div>
+            }
+        </div>
+        <div class="form-actions"><button class="btn primary">Save</button><a class="btn" asp-action="Index">Cancel</a></div>
+    </form>
+</div>
+</div>

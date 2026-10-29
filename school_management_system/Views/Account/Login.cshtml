@@ -1,0 +1,29 @@
+﻿@using school_management_system.Models.Domain
+@model LoginVm
+@{
+    Layout = "~/Views/Shared/_AuthLayout.cshtml"; ViewData["Title"] = "Sign in";
+}
+<h2>Welcome back</h2>
+<p class="muted" style="margin:0 0 24px">Sign in with the email and password given by your school.</p>
+<form method="post" class="form">
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert error"><div asp-validation-summary="All"></div></div>
+    }
+    <input type="hidden" asp-for="ReturnUrl" />
+    <div class="field">
+        <label asp-for="Email">
+
+        </label>
+        <input asp-for="Email" autofocus />
+    </div>
+    <div class="field">
+        <label asp-for="Password"></label>
+        <input asp-for="Password" />
+    </div>
+    <div class="field">
+        <label class="check" style="font-weight:400">
+            <input type="checkbox" asp-for="RememberMe" /> Keep me signed in</label>
+            </div>
+    <button class="btn primary" style="width:100%;justify-content:center">Sign in</button>
+</form>

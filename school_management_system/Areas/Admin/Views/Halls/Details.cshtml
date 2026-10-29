@@ -1,0 +1,69 @@
+﻿@model Hall
+@{
+    var rooms = (List<RoomRow>)ViewData["Rooms"]!;
+    var students = (List<HallStudent>)ViewData["Students"]!;
+    var master = ViewData["Master"] as string;
+}
+<div class="page-head">
+    <div><h1>@Model.Name</h1><p>Hall master: <b>@(master ?? "not assigned")</b></p></div>
+    <div class="actions"><a class="btn primary" asp-action="AssignMaster" asp-route-id="@Model.Id">@(master == null ? "Assign hall master" : "Change hall master")</a><a class="btn" asp-action="Edit" asp-route-id="@Model.Id">Edit</a><a class="btn" asp-action="Index">All halls</a></div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Rooms</h2><span class="muted">Green = space available · Red = full</span></div><div class="card-body">
+    @if (!rooms.Any())
+    {
+        <div class="muted">No rooms yet.</div>
+    }
+    <div class="rooms">@foreach (var r in rooms) {
+        <a class="room @(r.Occupied >= r.Capacity ? "red" : "green")" asp-action="EditRoom" asp-route-id="@r.Id"><b>@r.Number</b><span class="small">@r.Occupied / @r.Capacity</span></a>
+    }
+</div>
+<hr style="border:0;border-top:1px solid var(--line2);margin:20px 0" />
+<form method="post" asp-action="AddRoom" class="form" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+    <input type="hidden" name="hallId" value="@Model.Id" />
+    <div class="field" style="margin:0"><label>Room number</label><input type="text" name="number" required /></div>
+    <div class="field" style="margin:0"><label>Beds</label><input type="number" name="capacity" value="4" min="1" /></div>
+    <button class="btn primary">Add room</button>
+</form>
+</div>
+</div>
+<div class="grid g2">
+    <div class="card">
+        <div class="card-head"><h2>Room list</h2></div><div class="card-body flush table-wrap">
+        <table class="data">
+            <thead><tr><th>Room</th><th class="num">Beds</th><th class="num">Filled</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var r in rooms)
+                {
+                    <tr>
+                        <td><b>@r.Number</b></td>
+                        <td class="num">@r.Capacity</td>
+                        <td class="num"><span class="badge @(r.Occupied >= r.Capacity ? "bad" : "ok")">@r.Occupied</span></td>
+                        <td class="right nowrap"><a class="btn sm" asp-action="EditRoom" asp-route-id="@r.Id">Edit</a> <a class="btn sm link-danger" asp-action="DeleteRoom" asp-route-id="@r.Id">Delete</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Registered students (@students.Count)</h2></div><div class="card-body flush table-wrap">
+    @if (!students.Any())
+    {
+        <div class="empty">No boarding students registered to this hall.</div>
+    }
+    else
+    {
+        <table class="data">
+            <thead><tr><th>Student</th><th>Room</th></tr></thead>
+            <tbody>
+                @foreach (var s in students)
+                {
+                    <tr><td><a asp-controller="Students" asp-action="Details" asp-route-id="@s.StudentId">@s.Name</a><div class="muted small">@s.Number</div></td><td>@(s.Room ?? "—")</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+</div>
+</div>

@@ -1,0 +1,15 @@
+﻿@using school_management_system.Models.Domain
+@model YearVm
+@{
+    ViewData["Title"] = "New academic year";
+}
+<div class="page-head"><div><h1>New academic year</h1><p>Two semesters and a record for every existing class are created automatically.</p></div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="form" asp-action="Create">
+            <div class="field"><label asp-for="Name"></label><input asp-for="Name" placeholder="2025/2026" /><span asp-validation-for="Name"></span></div>
+            <div class="field"><label class="check" style="width:max-content"><input type="checkbox" asp-for="MakeCurrent" /> Make this the current academic year</label></div>
+            <div class="form-actions"><button class="btn primary">Create</button><a class="btn" asp-action="Index">Cancel</a></div>
+        </form>
+    </div>
+</div>

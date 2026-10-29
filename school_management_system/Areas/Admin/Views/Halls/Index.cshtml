@@ -1,0 +1,27 @@
+﻿@using school_management_system.Models.Domain
+@model List<HallRow>
+@{
+    ViewData["Title"] = "Halls";
+}
+<div class="page-head"><div><h1>Halls &amp; hall masters</h1><p>Boarding houses, their rooms and who runs them.</p></div><div class="actions"><a class="btn primary" asp-action="Create">Add hall</a></div></div>
+@if (!Model.Any())
+{
+    <div class="card empty">No halls yet.</div>
+}
+<div class="grid g3">
+    @foreach (var h in Model)
+    {
+        <div class="card" style="margin:0">
+            <div class="card-body">
+                <div style="display:flex;justify-content:space-between;align-items:start"><h3 style="font-size:20px"><a asp-action="Details" asp-route-id="@h.Id">@h.Name</a></h3>@if (h.Gender != null) {
+                    <span class="badge">@h.Gender</span>
+                }
+            </div>
+            <p class="muted" style="margin:6px 0 14px">Hall master: <b style="color:var(--text)">@(h.Master ?? "not assigned")</b></p>
+            <div class="progress"><span style="width:@Ui.Pct(h.Occupied, h.Beds)%"></span></div>
+            <div class="muted small" style="margin:6px 0 14px">@h.Occupied of @h.Beds beds filled · @h.Rooms rooms · @h.Registered students registered</div>
+            <div class="actions"><a class="btn sm" asp-action="Details" asp-route-id="@h.Id">Open</a><a class="btn sm" asp-action="AssignMaster" asp-route-id="@h.Id">Hall master</a><a class="btn sm" asp-action="Edit" asp-route-id="@h.Id">Edit</a><a class="btn sm link-danger" asp-action="Delete" asp-route-id="@h.Id">Delete</a></div>
+        </div>
+    </div>
+}
+</div>

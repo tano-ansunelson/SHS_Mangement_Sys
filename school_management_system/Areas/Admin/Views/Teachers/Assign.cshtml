@@ -1,0 +1,43 @@
+﻿@{
+    var teacher = (Teacher)ViewData["Teacher"]!;
+    ViewData["Title"] = "Assign teaching";
+    var options = ViewData["Options"] as List<ClassOption>;
+    var subjectId = ViewData["SubjectId"] as int?;
+}
+<div class="page-head"><div><h1>Assign teaching</h1><p>@teacher.User.FullName — pick a subject, then the classes they will teach it in.</p></div><div class="actions"><a class="btn" asp-action="Details" asp-route-id="@teacher.Id">Back</a></div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="get" class="form" style="margin-bottom:20px">
+            <input type="hidden" name="id" value="@teacher.Id" />
+            <div class="field"><label>Subject</label><select name="subjectId" asp-items="(SelectList)ViewBag.Subjects" data-autosubmit><option value="">Select a subject…</option></select></div>
+        </form>
+        @if (options != null)
+        {
+            if (!options.Any())
+            {
+                <div class="muted">No class in the current year takes this subject.</div>
+            }
+            else
+            {
+                <form method="post" class="form">
+                    <input type="hidden" name="id" value="@teacher.Id" /><input type="hidden" name="subjectId" value="@subjectId" />
+                    <div class="field">
+                        <label>Classes</label><div class="checks">
+                        @foreach (var o in options)
+                        {
+                            <label class="check @(o.TakenBy != null ? "disabled" : "")">
+                                <input type="checkbox" name="classYearIds" value="@o.ClassYearId" disabled="@(o.TakenBy != null)" />
+                                <span>@o.Name@if (o.TakenBy != null) {
+                                    <span class="muted small"><br />Taught by @o.TakenBy</span>
+                                }
+                            </span>
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="form-actions"><button class="btn primary">Assign</button></div>
+        </form>
+    }
+}
+</div>
+</div>

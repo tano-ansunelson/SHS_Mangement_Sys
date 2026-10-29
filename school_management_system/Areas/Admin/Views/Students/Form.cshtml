@@ -1,0 +1,66 @@
+﻿@using school_management_system.Models.Domain
+@model StudentVm
+@{
+    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit student" : "Register student";
+    var classes = ViewData["ClassData"] as List<ClassOptionRow> ?? new();
+}
+<div class="page-head"><div><h1>@ViewData["Title"]</h1>@if (!edit) {
+    <p>The student ID, school email and temporary password are generated automatically.</p>
+}
+</div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
+            <div asp-validation-summary="ModelOnly" class="field-validation-error"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="row2">
+                <div class="field"><label asp-for="FullName"></label><input asp-for="FullName" /><span asp-validation-for="FullName"></span></div>
+                <div class="field"><label asp-for="Gender"></label><select asp-for="Gender"><option value="Male">Male</option><option value="Female">Female</option></select></div>
+            </div>
+            <div class="row2">
+                <div class="field"><label>Date of birth</label><input type="date" name="DateOfBirth" value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))" /><span asp-validation-for="DateOfBirth"></span></div>
+                <div class="field"><label asp-for="Residence"></label><select asp-for="Residence" id="Residence"><option value="Day">Day student</option><option value="Boarding">Boarding student</option></select></div>
+            </div>
+            <div class="row2">
+                <div class="field"><label asp-for="GuardianName"></label><input asp-for="GuardianName" /><span asp-validation-for="GuardianName"></span></div>
+                <div class="field"><label asp-for="GuardianPhone"></label><input asp-for="GuardianPhone" /><span asp-validation-for="GuardianPhone"></span></div>
+            </div>
+            @if (!edit)
+            {
+                <div class="row2">
+                    <div class="field"><label>Course</label><select id="courseFilter" asp-items="(SelectList)ViewBag.Courses"><option value="">Select course…</option></select></div>
+                    <div class="field">
+                        <label asp-for="ClassYearId"></label>
+                        <select asp-for="ClassYearId" id="ClassYearId">
+                            <option value="0">Select class…</option>
+                            @foreach (var c in classes)
+                            {
+                                <option value="@c.Id" data-course="@c.CourseId" selected="@(c.Id == Model.ClassYearId)">@c.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="ClassYearId"></span>
+                        <div class="hint">The student takes the subjects assigned to the class, which stay the same through all three years.</div>
+                    </div>
+                </div>
+            }
+            <div class="field" id="hallField">
+                <label asp-for="HallId"></label>
+                <select asp-for="HallId" asp-items="(SelectList)ViewBag.Halls"><option value="">Select hall…</option></select><span asp-validation-for="HallId"></span>
+                <div class="hint">The hall master will see this student and assign a room.</div>
+            </div>
+            <div class="form-actions"><button class="btn primary">@(edit ? "Save changes" : "Register")</button><a class="btn" asp-action="Index">Cancel</a></div>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        const res = document.getElementById('Residence'), hall = document.getElementById('hallField');
+        const syncHall = () => hall.style.display = res.value === 'Boarding' ? '' : 'none';
+        res.addEventListener('change', syncHall); syncHall();
+        const cf = document.getElementById('courseFilter'), cls = document.getElementById('ClassYearId');
+        if (cf && cls) cf.addEventListener('change', () => {
+            [...cls.options].forEach(o => { if (o.value !== '0') o.hidden = cf.value && o.dataset.course !== cf.value; });
+            cls.value = '0';
+        });
+    </script>
+}

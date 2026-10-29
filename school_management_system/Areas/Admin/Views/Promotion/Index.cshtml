@@ -1,0 +1,54 @@
+﻿@model List<PromotionClassRow>
+@{
+    ViewData["Title"] = "Promotion"; var next = ViewData["NextYearId"] as int?;
+}
+<div class="page-head"><div><h1>Promotion</h1><p>Approve class coordinators' promote/repeat lists. Form 3 students who pass graduate.</p></div></div>
+<div class="card">
+    <div class="toolbar">
+        <form method="get" style="display:flex;gap:10px;align-items:center">
+            <label>Promote into</label>
+            <select name="nextYearId" asp-items="(SelectList)ViewBag.Years" data-autosubmit><option value="">Select next academic year…</option></select>
+        </form>
+        <span class="muted small">Create the next academic year first. Next-year classes are created with it.</span>
+    </div>
+    <div class="card-body flush table-wrap">
+        @if (!Model.Any())
+        {
+            <div class="empty">No classes in the current year.</div>
+        }
+        else
+        {
+            <table class="data">
+                <thead><tr><th>Class</th><th class="num">Students</th><th class="num">Promote</th><th class="num">Repeat</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td><b>@c.Name</b></td>
+                            <td class="num">@c.Students</td>
+                            <td class="num">@c.Promote</td>
+                            <td class="num">@c.Repeat</td>
+                            <td>@if (c.Done) {
+                                <span class="badge ok">Approved</span>
+                            } else if (c.Pending > 0)
+                            {
+
+                                <span class="badge warn">Waiting for you</span>
+                            }
+                            else
+                            {
+
+                                <span class="badge">Not submitted</span>
+                            }
+                        </td>
+                        <td class="right">@if (c.Pending > 0 && next != null) {
+                            <a class="btn sm primary" asp-action="Review" asp-route-classYearId="@c.ClassYearId" asp-route-nextYearId="@next">Review</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+</div>
+</div>

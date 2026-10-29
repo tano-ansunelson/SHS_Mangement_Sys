@@ -1,0 +1,38 @@
+﻿@using school_management_system.Models.Enums
+@model List<PromotionStudentRow>
+@{
+    var cyId = (int)ViewData["ClassYearId"]!; var nextId = (int)ViewData["NextYearId"]!; var form = (int)ViewData["Form"]!;
+}
+<div class="page-head"><div><h1>@ViewData["ClassName"]</h1><p>Promotion into @ViewData["NextYear"]@if (form == 3) {
+    <span> · Form 3 students recommended for promotion will graduate.</span>
+}
+</p></div><div class="actions"><a class="btn" asp-action="Index" asp-route-nextYearId="@nextId">Back</a></div></div>
+<div class="card">
+    <div class="card-body flush table-wrap">
+        <table class="data">
+            <thead><tr><th>Student</th><th>ID</th><th class="num">Average score</th><th>Recommendation</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td><b>@s.Name</b></td>
+                        <td>@s.Number</td>
+                        <td class="num">@(s.Average?.ToString("0.#") ?? "—")</td>
+                        <td><span class="badge @(s.Decision == PromotionDecision.Promote ? "ok" : "warn")">@(s.Decision == PromotionDecision.Promote ? (form == 3 ? "Graduate" : "Promote") : "Repeat")</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="grid g2">
+    <div class="card"><div class="card-body"><form method="post" asp-action="Approve" data-confirm="Approve this list? New enrollments will be created and cannot be undone."><input type="hidden" name="classYearId" value="@cyId" /><input type="hidden" name="nextYearId" value="@nextId" /><button class="btn primary">Approve promotion</button></form></div></div>
+    <div class="card">
+        <div class="card-body">
+            <form method="post" asp-action="Reject" class="form">
+                <input type="hidden" name="classYearId" value="@cyId" /><input type="hidden" name="nextYearId" value="@nextId" />
+                <div class="field"><label>Send back to coordinator with a note</label><input type="text" name="note" placeholder="What should be corrected?" /></div><button class="btn">Send back</button>
+            </form>
+        </div>
+    </div>
+</div>

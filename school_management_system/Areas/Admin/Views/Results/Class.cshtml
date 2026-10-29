@@ -1,0 +1,12 @@
+﻿@model MatrixVm
+<div class="page-head">
+    <div>
+        <h1>@Model.ClassName</h1>
+        <p>@Model.AssessmentTitle</p>
+    </div>
+    <div class="actions">
+        <button class="btn" onclick="window.print()">Print</button>
+        <a class="btn" asp-action="Index" asp-route-assessmentId="@Model.AssessmentId">Back</a>
+    </div>
+ </div>
+<partial name="_ResultMatrix" model="Model" />

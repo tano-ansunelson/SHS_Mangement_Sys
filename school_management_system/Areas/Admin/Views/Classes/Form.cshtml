@@ -1,0 +1,53 @@
+﻿@using school_management_system.Models.Domain
+@model ClassVm
+@{
+    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit class subjects" : "New class";
+}
+<div class="page-head"><div><h1>@ViewData["Title"]</h1><p>Every student in the class takes exactly this list of subjects.</p></div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
+            <div asp-validation-summary="All" class="field-validation-error"></div>
+            <input type="hidden" asp-for="Id" />
+            @if (edit)
+            {
+                <input type="hidden" asp-for="CourseId" /><input type="hidden" asp-for="FormLevel" /><input type="hidden" asp-for="Group" />
+            }
+            <div class="row2">
+                <div class="field">
+                    <label asp-for="CourseId"></label>
+                    <select asp-for="CourseId" id="CourseId" disabled="@edit"><option value="">Select course…</option>@foreach (var c in Model.Courses) {
+                        <option value="@c.Id" selected="@(c.Id == Model.CourseId)">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label asp-for="FormLevel"></label>
+                <select asp-for="FormLevel" disabled="@edit"><option value="1">Form 1</option><option value="2">Form 2</option><option value="3">Form 3</option></select>
+            </div>
+        </div>
+        <div class="field" style="max-width:240px"><label asp-for="Group">Group</label><input asp-for="Group" readonly="@edit" placeholder="A" /><span asp-validation-for="Group"></span></div>
+        <div class="field">
+            <label>Subjects</label>
+            <label class="check" style="margin-bottom:8px;width:max-content"><input type="checkbox" data-all=".subj" /> Select all</label>
+            <div class="checks">@foreach (var s in Model.AllSubjects) {
+                <label class="check"><input class="subj" type="checkbox" name="SubjectIds" value="@s.Id" checked="@Model.SubjectIds.Contains(s.Id)" /> @s.Name</label>
+            }
+        </div>
+    </div>
+    <div class="form-actions"><button class="btn primary">Save</button><a class="btn" asp-action="Index">Cancel</a></div>
+</form>
+</div>
+</div>
+@section Scripts {
+    @if (!edit)
+    {
+        <script>
+            const map = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CourseSubjects));
+            document.getElementById('CourseId').addEventListener('change', e => {
+                const ids = (map[e.target.value] || []).map(String);
+                document.querySelectorAll('.subj').forEach(c => c.checked = ids.includes(c.value));
+            });
+        </script>
+    }
+}

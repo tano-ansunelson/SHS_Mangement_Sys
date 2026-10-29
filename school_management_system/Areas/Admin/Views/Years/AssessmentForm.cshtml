@@ -1,0 +1,20 @@
+﻿@using school_management_system.Models.Domain
+@model AssessmentVm
+@{
+    ViewData["Title"] = "Create examination";
+}
+<div class="page-head"><div><h1>Create examination</h1><p>Once created, it appears on teacher and student dashboards. Scores stay hidden from students until you publish them.</p></div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="form" asp-action="CreateAssessment">
+            <div asp-validation-summary="ModelOnly" class="field-validation-error"></div>
+            <div class="row2">
+                <div class="field"><label asp-for="SemesterId"></label><select asp-for="SemesterId" asp-items="(SelectList)ViewBag.Semesters"><option value="0">Select semester…</option></select><span asp-validation-for="SemesterId"></span></div>
+                <div class="field"><label asp-for="Type">Type</label><select asp-for="Type"><option value="Midterm">Midterm</option><option value="Final">Final examination</option></select></div>
+            </div>
+            <div class="field"><label asp-for="Title">Title (optional)</label><input asp-for="Title" placeholder="Midterm" /></div>
+            <div class="hint" style="margin-bottom:16px">Form 3 students have no second-semester examinations; they sit WASSCE instead.</div>
+            <div class="form-actions"><button class="btn primary">Create</button><a class="btn" asp-action="Index">Cancel</a></div>
+        </form>
+    </div>
+</div>

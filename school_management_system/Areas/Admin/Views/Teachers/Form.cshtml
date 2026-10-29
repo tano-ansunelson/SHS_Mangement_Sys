@@ -1,0 +1,35 @@
+﻿@using school_management_system.Models.Domain
+@model TeacherVm
+@{
+    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit teacher" : "Add teacher";
+}
+<div class="page-head"><div><h1>@ViewData["Title"]</h1>@if (!edit) {
+    <p>A staff ID, school email and temporary password are generated automatically.</p>
+}
+</div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
+            <div asp-validation-summary="ModelOnly" class="field-validation-error"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="row2">
+                <div class="field"><label asp-for="FullName"></label><input asp-for="FullName" /><span asp-validation-for="FullName"></span></div>
+                <div class="field"><label asp-for="Phone"></label><input asp-for="Phone" /><span asp-validation-for="Phone"></span></div>
+            </div>
+            @if (!edit)
+            {
+                <div class="field">
+                    <label asp-for="CoordinatorClassYearId"></label>
+                    <select asp-for="CoordinatorClassYearId" asp-items="(SelectList)ViewBag.Classes"><option value="">Not a coordinator</option></select>
+                    <div class="hint">Not every teacher coordinates a class. Subjects and classes are assigned after the account is created.</div>
+                </div>
+            }
+            else
+            {
+
+                <div class="field"><label class="check" style="width:max-content"><input type="checkbox" asp-for="IsActive" /> Account active</label></div>
+            }
+            <div class="form-actions"><button class="btn primary">Save</button><a class="btn" asp-action="Index">Cancel</a></div>
+        </form>
+    </div>
+</div>

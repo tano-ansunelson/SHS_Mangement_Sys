@@ -1,0 +1,18 @@
+﻿@using school_management_system.Models.Domain
+@model SubjectVm
+@{
+    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit subject" : "New subject";
+}
+<div class="page-head"><div><h1>@ViewData["Title"]</h1></div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
+            <input type="hidden" asp-for="Id" />
+            <div class="row2">
+                <div class="field"><label asp-for="Name"></label><input asp-for="Name" placeholder="e.g. Elective Mathematics" /><span asp-validation-for="Name"></span></div>
+                <div class="field"><label asp-for="Code"></label><input asp-for="Code" placeholder="e.g. EMATH" /><span asp-validation-for="Code"></span></div>
+            </div>
+            <div class="form-actions"><button class="btn primary">Save</button><a class="btn" asp-action="Index">Cancel</a></div>
+        </form>
+    </div>
+</div>

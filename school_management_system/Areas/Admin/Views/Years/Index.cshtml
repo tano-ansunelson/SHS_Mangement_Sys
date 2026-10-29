@@ -1,0 +1,53 @@
+﻿@model List<YearRow>
+@{
+    ViewData["Title"] = "Academic years";
+}
+<div class="page-head">
+    <div><h1>Academic years</h1><p>Each year has two semesters; each semester has a midterm and a final examination.</p></div>
+    <div class="actions"><a class="btn" asp-action="CreateAssessment">Create examination</a><a class="btn primary" asp-action="Create">New academic year</a></div>
+</div>
+@if (!Model.Any())
+{
+    <div class="card empty">No academic years yet.</div>
+}
+@foreach (var y in Model)
+{
+    <div class="card">
+        <div class="card-head">
+            <div><h2>@y.Name @if (y.IsCurrent) {
+                <span class="badge ok">Current</span>
+            }
+        </h2><span class="muted small">@y.Classes classes · @y.Students enrollments</span></div>
+        @if (!y.IsCurrent)
+        {
+            <form method="post" asp-action="SetCurrent" asp-route-id="@y.Id" data-confirm="Make @y.Name the current academic year?"><button class="btn sm">Make current</button></form>
+        }
+    </div>
+    <div class="card-body">
+        <div class="grid g2">
+            @foreach (var s in y.Semesters)
+            {
+                <div>
+                    <h3 style="font-size:16px;margin-bottom:8px">Semester @s.Number</h3>
+                    @if (!s.Assessments.Any())
+                    {
+                        <div class="muted">No examinations yet. <a asp-action="CreateAssessment" asp-route-semesterId="@s.Id">Create one</a></div>
+                    }
+                    <table class="data">
+                        <tbody>
+                            @foreach (var a in s.Assessments)
+                            {
+                                <tr>
+                                    <td><b>@a.Title</b><div class="muted small">@a.Type · @a.Results score(s)</div></td>
+                                    <td><span class="badge @(a.IsOpen ? "ok" : "")">@(a.IsOpen ? "Open" : "Closed")</span></td>
+                                    <td class="right nowrap"><form class="inline" method="post" asp-action="ToggleAssessment" asp-route-id="@a.Id"><button class="btn sm">@(a.IsOpen ? "Close" : "Re-open")</button></form> <a class="btn sm link-danger" asp-action="DeleteAssessment" asp-route-id="@a.Id">Delete</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+}

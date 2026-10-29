@@ -1,0 +1,57 @@
+﻿@using school_management_system.Models.Domain
+@using school_management_system.Models.Enums
+@model List<ClassProgress>
+@{
+    ViewData["Title"] = "Results"; var aid = ViewData["AssessmentId"] as int?;
+}
+<div class="page-head"><div><h1>Examination results</h1><p>Approve what coordinators reviewed, then publish to students.</p></div></div>
+<div class="card">
+    <div class="toolbar">
+        <form method="get" style="display:flex;gap:10px;align-items:center">
+            <label>Examination</label>
+            <select name="assessmentId" asp-items="(SelectList)ViewBag.Assessments" data-autosubmit><option value="">Select…</option></select>
+        </form>
+    </div>
+    @if (aid == null)
+    {
+        <div class="empty">Choose an examination to see each class's progress.</div>
+    }
+    else if (!Model.Any())
+    {
+
+        <div class="empty">No classes for this examination.</div>
+    }
+    else
+    {
+        <div class="card-body flush table-wrap">
+            <table class="data">
+                <thead><tr><th>Class</th><th>Teachers' entries</th><th>Stage</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td><b>@c.Name</b><div class="muted small">@c.Students students · @c.Subjects subjects</div></td>
+                            <td><div class="progress" style="width:140px"><span style="width:@Ui.Pct(c.Total, c.Expected)%"></span></div><div class="muted small">@c.Total of @c.Expected entered</div></td>
+                            <td>@foreach (var s in Enum.GetValues<ResultStatus>()) { if (c.Of(s) > 0) {
+                                <span class="badge @Ui.Status(s)">@s @c.Of(s)</span>
+                            }
+                        }
+                    </td>
+                    <td class="right nowrap">
+                        <a class="btn sm" asp-action="Class" asp-route-classYearId="@c.ClassYearId" asp-route-assessmentId="@aid">View</a>
+                        @if (c.CanApprove)
+                        {
+                            <form class="inline" method="post" asp-action="Approve" data-confirm="Approve all results for @c.Name?"><input type="hidden" name="classYearId" value="@c.ClassYearId" /><input type="hidden" name="assessmentId" value="@aid" /><button class="btn sm primary">Approve</button></form>
+                        }
+                        @if (c.CanPublish)
+                        {
+                            <form class="inline" method="post" asp-action="Publish" data-confirm="Publish results for @c.Name? Students will see them immediately."><input type="hidden" name="classYearId" value="@c.ClassYearId" /><input type="hidden" name="assessmentId" value="@aid" /><button class="btn sm primary">Publish</button></form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+}
+</div>

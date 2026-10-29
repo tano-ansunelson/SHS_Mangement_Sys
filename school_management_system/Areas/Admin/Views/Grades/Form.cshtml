@@ -1,0 +1,34 @@
+﻿@using school_management_system.Models.Domain
+@model GradeVm
+@{
+    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit grade" : "Add grade";
+}
+<div class="page-head"><div><h1>@ViewData["Title"]</h1></div></div>
+<div class="card">
+    <div class="card-body">
+        <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
+            <input type="hidden" asp-for="Id" />
+            <div class="row2">
+                <div class="field">
+                    <label asp-for="MinScore"></label>
+                    <input asp-for="MinScore" type="number" step="0.5" />
+                    <span asp-validation-for="MinScore"></span>
+                </div>
+                <div class="field"><label asp-for="Grade">
+
+                </label><input asp-for="Grade" placeholder="A1" />
+                <span asp-validation-for="Grade"></span>
+            </div>
+            </div>
+            <div class="field">
+                <label asp-for="Remark"></label>
+                <input asp-for="Remark" placeholder="Excellent" />
+                <span asp-validation-for="Remark"></span>
+            </div>
+            <div class="form-actions">
+                <button class="btn primary">Save</button>
+                <a class="btn" asp-action="Index">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,70 @@
+﻿@model Teacher
+@{
+    var assignments = (List<AssignmentRow>)ViewData["Assignments"]!;
+    var coordinates = (List<string>)ViewData["Coordinates"]!;
+    var halls = (List<string>)ViewData["Halls"]!;
+}
+<div class="page-head">
+    <div><h1>@Model.User.FullName</h1><p>@Model.StaffId · @Model.User.Email</p></div>
+    <div class="actions">
+        <a class="btn primary" asp-action="Assign" asp-route-id="@Model.Id">Assign subjects &amp; classes</a><a class="btn" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+        <form class="inline" method="post" asp-action="ResetPassword" asp-route-id="@Model.Id" data-confirm="Generate a new temporary password?"><button class="btn">Reset password</button></form>
+        <a class="btn link-danger" asp-action="Delete" asp-route-id="@Model.Id">Delete</a>
+    </div>
+</div>
+<div class="grid g3">
+    <div class="card"><div class="card-head"><h2>Profile</h2></div><div class="card-body"><dl class="kv"><dt>Phone</dt><dd>@(Model.Phone ?? "—")</dd><dt>Status</dt><dd><span class="badge @(Model.IsActive ? "ok" : "bad")">@(Model.IsActive ? "Active" : "Inactive")</span></dd></dl></div></div>
+    <div class="card"><div class="card-head"><h2>Coordinator</h2></div><div class="card-body">@if (!coordinates.Any()) {
+        <span class="muted">Never a coordinator</span>
+    } else
+    {
+        foreach (var c in coordinates)
+        {
+
+            <div>@c</div>
+        }
+    }
+</div></div>
+<div class="card"><div class="card-head"><h2>Hall master</h2></div><div class="card-body">@if (!halls.Any()) {
+    <span class="muted">Never a hall master</span>
+} else
+{
+    foreach (var h in halls)
+    {
+
+        <div>@h</div>
+    }
+}
+</div></div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Teaching assignments</h2><span class="muted">Past years stay as a record</span></div><div class="card-body flush table-wrap">
+    @if (!assignments.Any())
+    {
+        <div class="empty">No subjects assigned yet.</div>
+    }
+    else
+    {
+        <table class="data">
+            <thead><tr><th>Year</th><th>Subject</th><th>Class</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var a in assignments)
+                {
+                    <tr>
+                        <td>@a.Year @if (a.Current) {
+                            <span class="badge ok">Current</span>
+                        }
+                    </td>
+                    <td><b>@a.Subject</b></td>
+                    <td>@a.Class</td>
+                    <td class="right">@if (a.Current) {
+                        <form class="inline" method="post" asp-action="Unassign" data-confirm="Remove this assignment?"><input type="hidden" name="id" value="@a.Id" /><input type="hidden" name="teacherId" value="@Model.Id" /><button class="btn sm link-danger">Remove</button></form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+}
+</div>
+</div>

@@ -1,0 +1,48 @@
+﻿@using school_management_system.Models.Domain
+@model AdminDashVm
+@{
+    ViewData["Title"] = "Dashboard"; var hasYear = ViewData["HasYear"] is true;
+}
+<div class="page-head">
+    <div><h1>Administration</h1><p>An overview of the school today.</p></div>
+    <div class="actions"><a class="btn primary" asp-controller="Students" asp-action="Create">Register student</a><a class="btn" asp-controller="Teachers" asp-action="Create">Add teacher</a></div>
+</div>
+@if (!hasYear)
+{
+    <div class="alert info">No academic year yet. <a asp-controller="Years" asp-action="Create">Create the first academic year</a> to start enrolling students.</div>
+}
+<div class="stats">
+    <div class="stat"><div class="num">@Model.Students</div><div class="label">Active students</div><div class="sub">@Model.Boarding boarding · @Model.Day day</div></div>
+    <div class="stat"><div class="num">@Model.Teachers</div><div class="label">Teachers</div></div>
+    <div class="stat"><div class="num">@Model.Classes</div><div class="label">Classes</div><div class="sub">@Model.Courses courses · @Model.Subjects subjects</div></div>
+    <div class="stat"><div class="num">@Model.Halls</div><div class="label">Halls</div></div>
+</div>
+<div class="grid g2">
+    <div class="card">
+        <div class="card-head"><h2>Needs your attention</h2></div><div class="card-body">
+        <p><a asp-controller="Results" asp-action="Index"><b>@Model.AwaitingApproval</b> class result set(s)</a> reviewed by coordinators, waiting for approval.</p>
+        <p style="margin-bottom:0"><a asp-controller="Promotion" asp-action="Index"><b>@Model.PromotionsPending</b> class promotion list(s)</a> waiting for your decision.</p>
+    </div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Students by course</h2></div><div class="card-body">
+    @foreach (var c in Model.ByCourse)
+    {
+        <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between"><span>@c.Name</span><b>@c.Count</b></div>
+            <div class="progress"><span style="width:@Ui.Pct(c.Count, Math.Max(Model.Students, 1))%"></span></div>
+        </div>
+    }
+    @if (!Model.ByCourse.Any())
+    {
+        <div class="muted">No courses yet.</div>
+    }
+</div>
+</div>
+</div>
+<div class="grid g4">
+    <a class="tile" asp-controller="Classes" asp-action="Index"><h3>Classes</h3><span class="muted">Forms, groups and their subjects</span></a>
+    <a class="tile" asp-controller="Halls" asp-action="Index"><h3>Halls</h3><span class="muted">Rooms and hall masters</span></a>
+    <a class="tile" asp-controller="Years" asp-action="Index"><h3>Academic years</h3><span class="muted">Semesters and exams</span></a>
+    <a class="tile" asp-controller="Grades" asp-action="Index"><h3>Grade scale</h3><span class="muted">Score boundaries</span></a>
+</div>

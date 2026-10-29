@@ -1,0 +1,98 @@
+﻿@using school_management_system.Models.Enums
+@using school_management_system.Service
+@{
+    var area = ViewContext.RouteData.Values["area"] as string ?? "";
+    if (area == "") area = User.IsInRole(Roles.Admin) ? "Admin" : User.IsInRole(Roles.Teacher) ? "Teacher" : User.IsInRole(Roles.HallMaster) ? "HallMaster" : User.IsInRole(Roles.Student) ? "Student" : "";
+    var ctrl = ViewContext.RouteData.Values["controller"] as string ?? "";
+    var act = ViewContext.RouteData.Values["action"] as string ?? "";
+    var fullName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "";
+    var initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpper(p[0])));
+    var coord = ViewData["CoordClasses"] as List<ClassCard> ?? new();
+
+    (string Group, string Label, string Controller, string Action)[] menu = area switch
+    {
+        "Admin" => new[]
+        {
+            ("", "Dashboard", "Home", "Index"),
+            ("People", "Students", "Students", "Index"), ("People", "Teachers", "Teachers", "Index"),
+            ("Academics", "Courses", "Courses", "Index"), ("Academics", "Subjects", "Subjects", "Index"), ("Academics", "Classes", "Classes", "Index"),
+            ("Boarding", "Halls & Hall Masters", "Halls", "Index"),
+            ("Examinations", "Academic Years", "Years", "Index"), ("Examinations", "Results", "Results", "Index"),
+            ("Examinations", "Promotion", "Promotion", "Index"), ("Examinations", "Grade Scale", "Grades", "Index"),
+        },
+        "Teacher" => new[] { ("", "Dashboard", "Home", "Index"), ("Teaching", "My Classes", "Classes", "Index"), ("Teaching", "Enter Results", "Results", "Index") },
+        "HallMaster" => new[] { ("", "Dashboard", "Home", "Index"), ("Hall", "Rooms", "Rooms", "Index"), ("Hall", "Students", "Students", "Index") },
+        "Student" => new[] { ("", "Dashboard", "Home", "Index"), ("Academics", "My Results", "Results", "Index"), ("Account", "My Profile", "Home", "Profile") },
+        _ => Array.Empty<(string, string, string, string)>()
+    };
+    var portal = area switch { "HallMaster" => "Hall Master", "" => "", _ => area };
+    string? lastGroup = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Scholar SHS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand"><div class="brand-mark">S</div><div><strong>Scholar SHS</strong><small>@portal Portal</small></div></div>
+            <nav class="nav">
+                @foreach (var m in menu)
+                {
+                    if (m.Group != lastGroup && m.Group != "")
+                    {
+                        <div class="nav-group">@m.Group</div>
+                    }
+                    lastGroup = m.Group;
+                    var active = m.Controller == ctrl && (m.Action == act || (m.Controller != "Home" && m.Action == "Index") || (m.Controller == "Home" && m.Action == act));
+                    <a class="@(active ? "active" : "")" asp-area="@area" asp-controller="@m.Controller" asp-action="@m.Action">@m.Label</a>
+                }
+                @if (area == "Teacher" && coord.Count > 0)
+                {
+                    <div class="nav-group">Class Coordinator</div>
+                    @foreach (var c in coord)
+                    {
+                        <a class="@(ctrl == "Coordinator" && Context.Request.Query["classYearId"] == c.ClassYearId.ToString() ? "active" : "")"
+                           asp-area="Teacher" asp-controller="Coordinator" asp-action="Class" asp-route-classYearId="@c.ClassYearId">@c.ClassName</a>
+                    }
+                }
+            </nav>
+            @if (User.IsInRole(Roles.Teacher) && User.IsInRole(Roles.HallMaster))
+            {
+                <div class="switch">
+                    Switch portal<br />
+                    <a asp-area="Teacher" asp-controller="Home" asp-action="Index">Teacher</a> ·
+                    <a asp-area="HallMaster" asp-controller="Home" asp-action="Index">Hall Master</a>
+                </div>
+            }
+            <div class="side-foot">
+                <div class="avatar">@initials</div>
+                <div class="who"><b>@fullName</b><a class="small" asp-controller="Account" asp-action="ChangePassword">Change password</a></div>
+                <form asp-controller="Account" asp-action="Logout" asp-area="" method="post"><button class="btn sm ghost" title="Sign out">Exit</button></form>
+            </div>
+        </aside>
+        <div class="main">
+            <header class="topbar">
+                <button id="menuBtn" class="btn sm" type="button">Menu</button>
+                <div class="crumb">@ViewData["Title"]</div>
+                @if (ViewData["YearName"] is string yn)
+                {
+                    <span class="chip">Academic year @yn</span>
+                }
+            </header>
+            <main class="content">
+                <partial name="_Alerts" />
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

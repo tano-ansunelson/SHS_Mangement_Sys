@@ -1,0 +1,39 @@
+﻿@model List<TeacherRow>
+@{
+    ViewData["Title"] = "Teachers";
+}
+<div class="page-head"><div><h1>Teachers</h1><p>Staff accounts, teaching loads and roles.</p></div><div class="actions"><a class="btn primary" asp-action="Create">Add teacher</a></div></div>
+<div class="card">
+    <div class="toolbar"><input type="search" placeholder="Search by name, staff ID or email…" data-filter="tTable" style="min-width:280px" /></div>
+    <div class="card-body flush table-wrap">
+        @if (!Model.Any())
+        {
+            <div class="empty">No teachers yet.</div>
+        }
+        else
+        {
+            <table class="data" id="tTable">
+                <thead><tr><th>Teacher</th><th>Staff ID</th><th>Email</th><th class="num">Classes this year</th><th>Roles</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var t in Model)
+                    {
+                        <tr>
+                            <td><a asp-action="Details" asp-route-id="@t.Id"><b>@t.Name</b></a>@if (!t.IsActive) {
+                                <span class="badge bad">Inactive</span>
+                            }
+                        </td>
+                        <td>@t.StaffId</td>
+                        <td class="muted">@t.Email</td>
+                        <td class="num">@t.Classes</td>
+                        <td>@if (t.IsHallMaster) {
+                            <span class="badge info">Hall master</span>
+                        }
+                    </td>
+                    <td class="right nowrap"><a class="btn sm" asp-action="Details" asp-route-id="@t.Id">Open</a> <a class="btn sm" asp-action="Assign" asp-route-id="@t.Id">Assign</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+</div>
+</div>

@@ -1,0 +1,32 @@
+﻿@using school_management_system.Models.Domain
+@model List<CourseRow>
+@{
+    ViewData["Title"] = "Courses";
+}
+<div class="page-head"><div><h1>Courses</h1><p>Programmes students choose at admission.</p></div><div class="actions"><a class="btn primary" asp-action="Create">Add course</a></div></div>
+<div class="card">
+    <div class="card-body flush table-wrap">
+        @if (!Model.Any())
+        {
+            <div class="empty">No courses yet.</div>
+        }
+        else
+        {
+            <table class="data">
+                <thead><tr><th>Course</th><th class="num">Subjects</th><th class="num">Classes</th><th class="num">Students</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td><b>@c.Name</b></td>
+                            <td class="num">@c.Subjects</td>
+                            <td class="num">@c.Classes</td>
+                            <td class="num">@c.Students</td>
+                            <td class="right nowrap"><a class="btn sm" asp-action="Edit" asp-route-id="@c.Id">Edit</a> <a class="btn sm link-danger" asp-action="Delete" asp-route-id="@c.Id">Delete</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

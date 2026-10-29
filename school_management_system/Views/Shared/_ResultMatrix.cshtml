@@ -1,0 +1,41 @@
+﻿@using school_management_system.Models.Domain
+@using school_management_system.Service
+@model MatrixVm
+<div class="card">
+    <div class="card-head"><h2>@Model.ClassName</h2><span class="muted">@Model.AssessmentTitle</span></div>
+    <div class="card-body flush table-wrap">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="empty">No students in this class.</div>
+        }
+        else
+        {
+            <table class="data">
+                <thead><tr><th>Student</th>@foreach (var s in Model.Subjects) {
+                    <th class="num">@s.Name</th>
+                }
+                <th class="num">Average</th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        <tr>
+                            <td><b>@r.Name</b><div class="muted small">@r.Number</div></td>
+                            @foreach (var s in Model.Subjects)
+                            {
+                                if (r.Cells.TryGetValue(s.Id, out var c))
+                                {
+                                    <td class="num"><span class="badge @Ui.Status(c.Status)" title="@c.Status">@c.Total.ToString("0.#") · @c.Grade</span></td>
+                                }
+                                else
+                                {
+                                    <td class="num muted">—</td>
+                                }
+                            }
+                            <td class="num"><b>@(r.Average?.ToString("0.#") ?? "—")</b></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
