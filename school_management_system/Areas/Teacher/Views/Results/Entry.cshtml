@@ -1,0 +1,77 @@
+﻿@using school_management_system.Models.Domain
+@model EntryVm
+@{
+    var note = ViewData["ReturnNote"] as string; var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<div class="page-head">
+    <div><h1>@Model.SubjectName</h1><p>@Model.ClassName · @Model.AssessmentTitle</p></div>
+    <div class="actions"><a class="btn" asp-action="Index" asp-route-assessmentId="@Model.AssessmentId">Back</a></div>
+</div>
+@if (!string.IsNullOrEmpty(note))
+{
+    <div class="alert error"><b>Returned by the coordinator:</b> @note</div>
+}
+@if (Model.Locked)
+{
+    <div class="alert info">These scores are submitted (or the examination is closed), so they can no longer be edited.</div>
+}
+<form method="post" asp-action="Save">
+    <input type="hidden" asp-for="ClassYearId" /><input type="hidden" asp-for="SubjectId" /><input type="hidden" asp-for="AssessmentId" />
+    <div class="card">
+        <div class="card-head"><h2>Scores</h2><span class="muted small">Class score out of @Model.MaxClass.ToString("0.#") · Exam score out of @Model.MaxExam.ToString("0.#")</span></div>
+        <div class="card-body flush table-wrap">
+            @if (!Model.Rows.Any())
+            {
+                <div class="empty">No students in this class yet.</div>
+            }
+            else
+            {
+                <table class="data">
+                    <thead><tr><th>#</th><th>Student</th><th>Class score</th><th>Exam score</th><th class="num">Total</th><th>Status</th></tr></thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.Rows.Count; i++)
+                        {
+                            var r = Model.Rows[i];
+                            <tr>
+                                <td class="muted">@(i + 1)</td>
+                                <td><b>@r.Name</b><div class="muted small">@r.Number</div><input type="hidden" name="Rows[@i].EnrollmentId" value="@r.EnrollmentId" /></td>
+                                <td><input class="cs" type="number" step="0.5" min="0" max="@Model.MaxClass.ToString(inv)" name="Rows[@i].ClassScore" value="@(r.ClassScore?.ToString("0.##", inv))" disabled="@Model.Locked" /></td>
+                                <td><input class="es" type="number" step="0.5" min="0" max="@Model.MaxExam.ToString(inv)" name="Rows[@i].ExamScore" value="@(r.ExamScore?.ToString("0.##", inv))" disabled="@Model.Locked" /></td>
+                                <td class="num"><b class="tot">—</b></td>
+                                <td>@if (r.Status != null) {
+                                    <span class="badge @Ui.Status(r.Status.Value)">@r.Status</span>
+                                } else
+                                {
+
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+@if (!Model.Locked && Model.Rows.Any())
+{
+    <div class="actions"><button class="btn primary">Save scores</button></div>
+}
+</form>
+@if (!Model.Locked && Model.Rows.Any())
+{
+    <form method="post" asp-action="Submit" class="inline" data-confirm="Submit these results to the class coordinator? You cannot edit them afterwards unless they are returned." style="display:block;margin-top:12px">
+        <input type="hidden" name="classYearId" value="@Model.ClassYearId" /><input type="hidden" name="subjectId" value="@Model.SubjectId" /><input type="hidden" name="assessmentId" value="@Model.AssessmentId" />
+        <button class="btn">Submit to coordinator</button> <span class="muted small">Save first. Every student needs scores before you can submit.</span>
+    </form>
+}
+@section Scripts {
+    <script>
+        document.querySelectorAll('tbody tr').forEach(tr => {
+            const cs = tr.querySelector('.cs'), es = tr.querySelector('.es'), t = tr.querySelector('.tot');
+            if (!cs) return;
+            const calc = () => { const a = parseFloat(cs.value), b = parseFloat(es.value); t.textContent = (isNaN(a) || isNaN(b)) ? '—' : (a + b).toFixed(1).replace(/\.0$/, ''); };
+            cs.addEventListener('input', calc); es.addEventListener('input', calc); calc();
+        });
+    </script>
+}

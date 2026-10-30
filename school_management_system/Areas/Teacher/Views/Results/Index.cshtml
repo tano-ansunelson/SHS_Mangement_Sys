@@ -1,0 +1,61 @@
+﻿@using school_management_system.Areas.Teacher.Controllers
+@using school_management_system.Models.Domain
+@model List<EntryProgress>
+@{
+    ViewData["Title"] = "Enter results"; var aid = ViewData["AssessmentId"] as int?;
+}
+<div class="page-head"><div><h1>Enter results</h1><p>Choose an examination, then open a subject and class to enter scores.</p></div></div>
+<div class="card">
+    <div class="toolbar">
+        <form method="get" style="display:flex;gap:10px;align-items:center">
+            <label>Examination</label>
+            <select name="assessmentId" asp-items="(SelectList)ViewBag.Assessments" data-autosubmit></select>
+        </form>
+    </div>
+    @if (aid == null)
+    {
+        <div class="empty">No examinations have been created for this year yet.</div>
+    }
+    else if (!Model.Any())
+    {
+
+        <div class="empty">You have no classes for this examination.</div>
+    }
+    else
+    {
+        <div class="card-body flush table-wrap">
+            <table class="data">
+                <thead><tr><th>Subject</th><th>Class</th><th>Progress</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td><b>@r.Subject</b></td>
+                            <td>@r.ClassName</td>
+                            <td><div class="progress" style="width:130px"><span style="width:@Ui.Pct(r.Entered, r.Students)%"></span></div><div class="muted small">@r.Entered of @r.Students entered</div></td>
+                            <td>@if (r.HasReturned) {
+                                <span class="badge bad">Returned for correction</span>
+                            } else if (r.Submitted)
+                            {
+
+                                <span class="badge info">Submitted</span>
+                            }
+                            else if (r.Entered > 0)
+                            {
+
+                                <span class="badge warn">Draft</span>
+                            }
+                            else
+                            {
+
+                                <span class="badge">Not started</span>
+                            }
+                        </td>
+                        <td class="right"><a class="btn sm primary" asp-action="Entry" asp-route-classYearId="@r.ClassYearId" asp-route-subjectId="@r.SubjectId" asp-route-assessmentId="@aid">@(r.Submitted ? "View" : "Enter scores")</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+</div>

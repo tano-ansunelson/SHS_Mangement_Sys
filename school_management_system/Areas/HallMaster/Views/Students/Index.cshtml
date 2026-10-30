@@ -1,0 +1,46 @@
+﻿@model List<HallStudentRow>
+@{
+    var rooms = (List<RoomStatus>)ViewData["Rooms"]!;
+}
+<div class="page-head"><div><h1>Students</h1><p>@ViewData["HallName"] · registered by the admin; you choose their rooms.</p></div></div>
+<div class="card">
+    <div class="toolbar"><input type="search" placeholder="Search students…" data-filter="hsTable" /></div><div class="card-body flush table-wrap">
+    @if (!Model.Any())
+    {
+        <div class="empty">No students have been registered to your hall yet.</div>
+    }
+    else
+    {
+        <table class="data" id="hsTable">
+            <thead><tr><th>Student</th><th>ID</th><th>Room</th><th>Assign / move</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td><b>@s.Name</b></td>
+                        <td>@s.StudentNumber</td>
+                        <td>@if (s.RoomNumber != null) {
+                            <span class="badge info">Room @s.RoomNumber</span>
+                        } else
+                        {
+
+                            <span class="badge warn">Waiting</span>
+                        }
+                    </td>
+                    <td>
+                        <form method="post" asp-controller="Rooms" asp-action="Allocate" style="display:flex;gap:6px">
+                            <input type="hidden" name="studentId" value="@s.StudentId" /><input type="hidden" name="returnTo" value="students" />
+                            <select name="roomId" style="min-width:140px" required><option value="">Select room…</option>@foreach (var r in rooms.Where(r => !r.IsFull && r.Number != s.RoomNumber)) {
+                                <option value="@r.RoomId">Room @r.Number (@(r.Capacity - r.Occupied) free)</option>
+                            }
+                        </select>
+                        <button class="btn sm">@(s.RoomNumber == null ? "Assign" : "Move")</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+}
+</div>
+</div>

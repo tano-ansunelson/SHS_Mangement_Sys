@@ -1,0 +1,28 @@
+﻿@model List<PersonRow>
+<div class="page-head">
+    <div><h1>@ViewData["Subject"]</h1><p>@ViewData["ClassName"] · @Model.Count student(s)</p></div>
+    <div class="actions"><a class="btn" asp-action="Index">Back</a></div>
+</div>
+<div class="card">
+    <div class="toolbar"><input type="search" placeholder="Search students…" data-filter="stTable" /></div><div class="card-body flush table-wrap">
+    @if (!Model.Any())
+    {
+        <div class="empty">No students in this class yet.</div>
+    }
+    else
+    {
+        <table class="data" id="stTable">
+            <thead><tr><th>#</th><th>Student</th><th>ID</th><th>Residence</th></tr></thead>
+            <tbody>
+                @{
+                    var i = 1;
+                }
+                @foreach (var s in Model)
+                {
+                    <tr><td class="muted">@(i++)</td><td><b>@s.Name</b></td><td>@s.StudentNumber</td><td>@s.Residence</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+</div>

@@ -1,0 +1,25 @@
+﻿@model List<SubjectCard>
+@{
+    ViewData["Title"] = "My classes";
+}
+<div class="page-head"><div><h1>My classes</h1><p>Open a subject card to see its classes, then a class to see its students.</p></div></div>
+@if (!Model.Any())
+{
+    <div class="card empty">No subjects assigned yet.</div>
+}
+<div class="grid g3">
+    @foreach (var s in Model)
+    {
+        <div class="card" style="margin:0">
+            <div class="card-head"><h2>@s.Subject</h2></div><div class="card-body">
+            @foreach (var c in s.Classes)
+            {
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line2)">
+                    <span>@c.ClassName</span>
+                    <span class="actions"><a class="btn sm" asp-action="Students" asp-route-classYearId="@c.ClassYearId" asp-route-subjectId="@s.SubjectId">Students</a></span>
+                </div>
+            }
+        </div>
+    </div>
+}
+</div>
