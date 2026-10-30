@@ -1,35 +1,63 @@
 ﻿@using school_management_system.Models.Domain
+@using school_management_system.Models.Enums
 @model TeacherVm
 @{
-    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit teacher" : "Add teacher";
+    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit teacher" : "Add new teacher";
 }
-<div class="page-head"><div><h1>@ViewData["Title"]</h1>@if (!edit) {
-    <p>A staff ID, school email and temporary password are generated automatically.</p>
+<div class="page-head"><div><h1>@ViewData["Title"]</h1><p>Dashboard / Teachers / @(edit ? "Edit" : "Add new")@if (!edit) {
+    <span> · the school email and temporary password are generated automatically</span>
 }
-</div></div>
-<div class="card">
-    <div class="card-body">
-        <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
-            <div asp-validation-summary="ModelOnly" class="field-validation-error"></div>
-            <input type="hidden" asp-for="Id" />
-            <div class="row2">
-                <div class="field"><label asp-for="FullName"></label><input asp-for="FullName" /><span asp-validation-for="FullName"></span></div>
-                <div class="field"><label asp-for="Phone"></label><input asp-for="Phone" /><span asp-validation-for="Phone"></span></div>
+</p></div></div>
+<form method="post" asp-action="@(edit ? "Edit" : "Create")" enctype="multipart/form-data">
+    <input type="hidden" asp-for="Id" />
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert error"><div asp-validation-summary="All"></div></div>
+    }
+    <div class="card">
+        <div class="card-head"><h2>Personal info</h2></div><div class="card-body">
+        <div class="row4">
+            <div class="field">
+                <label asp-for="StaffId"></label><input asp-for="StaffId" placeholder="Leave empty to generate" readonly="@edit" /><span asp-validation-for="StaffId"></span>
+                @if (!edit)
+                {
+                    <div class="hint">Optional. Leave empty and the system creates one (TCH-0001…).</div>
+                }
             </div>
+            <div class="field"><label asp-for="FullName">Full name <span style="color:var(--bad)">*</span></label><input asp-for="FullName" placeholder="Enter full name" /><span asp-validation-for="FullName"></span></div>
+            <div class="field"><label asp-for="Gender"></label><select asp-for="Gender" asp-items="Html.GetEnumSelectList<Gender>()"><option value="">Select…</option></select></div>
+            <div class="field"><label>Date of birth</label><input type="date" name="DateOfBirth" value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))" /><span asp-validation-for="DateOfBirth"></span></div>
+
+            <div class="field"><label asp-for="FatherName"></label><input asp-for="FatherName" placeholder="Enter father's name" /></div>
+            <div class="field"><label asp-for="MotherName"></label><input asp-for="MotherName" placeholder="Enter mother's name" /></div>
+            <div class="field"><label asp-for="MaritalStatus"></label><select asp-for="MaritalStatus" asp-items="Html.GetEnumSelectList<MaritalStatus>()"><option value="">Select…</option></select></div>
+            <div class="field"><label asp-for="ContractType"></label><select asp-for="ContractType" asp-items="Html.GetEnumSelectList<ContractType>()"><option value="">Select…</option></select></div>
+
+            <div class="field"><label asp-for="Shift"></label><select asp-for="Shift" asp-items="Html.GetEnumSelectList<Shift>()"><option value="">Select…</option></select></div>
+            <div class="field"><label asp-for="WorkLocation"></label><input asp-for="WorkLocation" placeholder="Enter work location" /></div>
+            <div class="field"><label>Join date</label><input type="date" name="JoinDate" value="@(Model.JoinDate?.ToString("yyyy-MM-dd"))" /></div>
+            <div class="field"><label asp-for="Phone">Phone number <span style="color:var(--bad)">*</span></label><input asp-for="Phone" placeholder="Enter phone number" /><span asp-validation-for="Phone"></span></div>
+
+            <div class="field"><label asp-for="ContactEmail"></label><input asp-for="ContactEmail" placeholder="Enter email" /><span asp-validation-for="ContactEmail"></span></div>
+            <div class="field"><label asp-for="ExperienceYears"></label><input asp-for="ExperienceYears" type="number" min="0" placeholder="Enter experience" /><span asp-validation-for="ExperienceYears"></span></div>
+            <div class="field"><label asp-for="Qualification"></label><input asp-for="Qualification" placeholder="Enter qualification" /><span asp-validation-for="Qualification"></span></div>
+            <partial name="_PhotoField" model='new PhotoFieldVm("Photo", "Teacher photo", Model.PhotoPath)' />
+
             @if (!edit)
             {
-                <div class="field">
-                    <label asp-for="CoordinatorClassYearId"></label>
-                    <select asp-for="CoordinatorClassYearId" asp-items="(SelectList)ViewBag.Classes"><option value="">Not a coordinator</option></select>
-                    <div class="hint">Not every teacher coordinates a class. Subjects and classes are assigned after the account is created.</div>
-                </div>
+                <div class="field"><label asp-for="CoordinatorClassYearId"></label><select asp-for="CoordinatorClassYearId" asp-items="(SelectList)ViewBag.Classes"><option value="">Not a coordinator</option></select></div>
             }
             else
             {
 
-                <div class="field"><label class="check" style="width:max-content"><input type="checkbox" asp-for="IsActive" /> Account active</label></div>
+                <div class="field"><label>Account</label><label class="check"><input type="checkbox" asp-for="IsActive" /> Active</label></div>
             }
-            <div class="form-actions"><button class="btn primary">Save</button><a class="btn" asp-action="Index">Cancel</a></div>
-        </form>
+        </div>
+        @if (!edit)
+        {
+            <div class="hint">Subjects and classes are assigned after saving, from the teacher's page (Assign subjects &amp; classes), so one teacher can take several subjects in several classes.</div>
+        }
     </div>
 </div>
+<div class="form-actions"><button class="btn primary">@(edit ? "Save changes" : "Add teacher")</button><a class="btn" asp-action="Index">Cancel</a></div>
+</form>

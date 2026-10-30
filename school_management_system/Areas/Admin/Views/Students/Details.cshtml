@@ -4,9 +4,21 @@
 @{
     var history = (List<EnrollmentRow>)ViewData["History"]!;
     var results = (List<StudentResultRow>)ViewData["Results"]!;
+    string Show(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v;
 }
 <div class="page-head">
-    <div><h1>@Model.User.FullName</h1><p>@Model.StudentNumber · @Model.Course.Name · <span class="badge @(Model.Status == StudentStatus.Active ? "ok" : "warn")">@Model.Status</span></p></div>
+    <div class="profile-head">
+        @if (!string.IsNullOrEmpty(Model.PhotoPath))
+        {
+            <img class="photo-lg" src="@Url.Content("~" + Model.PhotoPath)" alt="" />
+        }
+        else
+        {
+
+            <div class="photo-lg photo-ph">@Model.User.FullName[0]</div>
+        }
+        <div><h1>@Model.User.FullName</h1><p>@Model.StudentNumber · @Model.Course.Name · <span class="badge @(Model.Status == StudentStatus.Active ? "ok" : "warn")">@Model.Status</span></p></div>
+    </div>
     <div class="actions">
         <button class="btn" onclick="window.print()">Print record</button><a class="btn" asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
         <form class="inline" method="post" asp-action="ResetPassword" asp-route-id="@Model.Id" data-confirm="Generate a new temporary password?"><button class="btn">Reset password</button></form>
@@ -20,20 +32,49 @@
     <div class="card">
         <div class="card-head"><h2>Personal details</h2></div><div class="card-body">
         <dl class="kv">
-            <dt>Email</dt>
+            <dt>Login email</dt>
             <dd>@Model.User.Email</dd>
+            <dt>Email</dt>
+            <dd>@Show(Model.ContactEmail)</dd>
+            <dt>Phone</dt>
+            <dd>@Show(Model.Phone)</dd>
+            <dt>Admission no</dt>
+            <dd>@Show(Model.AdmissionNumber)</dd>
+            <dt>Roll number</dt>
+            <dd>@Show(Model.RollNumber)</dd>
+            <dt>Category</dt>
+            <dd>@Show(Model.Category)</dd>
             <dt>Gender</dt>
             <dd>@Model.Gender</dd>
             <dt>Date of birth</dt>
             <dd>@Model.DateOfBirth.ToString("d MMM yyyy")</dd>
             <dt>Residence</dt>
             <dd>@Model.Residence</dd>
-            <dt>Guardian</dt>
-            <dd>@Model.GuardianName</dd>
-            <dt>Guardian phone</dt>
-            <dd>@Model.GuardianPhone</dd>
         </dl>
     </div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Parent &amp; guardian</h2></div><div class="card-body">
+    @foreach (var (label, name, phone, job, photo) in new[] {
+            ("Father", Model.FatherName, Model.FatherPhone, Model.FatherOccupation, Model.FatherPhotoPath),
+            ("Mother", Model.MotherName, Model.MotherPhone, Model.MotherOccupation, Model.MotherPhotoPath) })
+    {
+        <div class="profile-head" style="margin-bottom:14px">
+            @if (!string.IsNullOrEmpty(photo))
+            {
+                <img class="photo-lg" style="width:64px;height:64px" src="@Url.Content("~" + photo)" alt="" />
+            }
+            else
+            {
+
+                <div class="photo-lg photo-ph" style="width:64px;height:64px;font-size:22px">@label[0]</div>
+            }
+            <div><b>@label:</b> @Show(name)<div class="muted small">@Show(phone) · @Show(job)</div></div>
+        </div>
+    }
+    <div><b>Guardian:</b> @Show(Model.GuardianName) <span class="muted small">· @Show(Model.GuardianPhone)</span></div>
+</div>
+</div>
 </div>
 <div class="card">
     <div class="card-head"><h2>Enrollment history</h2></div><div class="card-body flush table-wrap">
@@ -46,7 +87,6 @@
             }
         </tbody>
     </table>
-</div>
 </div>
 </div>
 <div class="card">

@@ -18,22 +18,31 @@
                     @foreach (var t in Model)
                     {
                         <tr>
-                            <td><a asp-action="Details" asp-route-id="@t.Id"><b>@t.Name</b></a>@if (!t.IsActive) {
-                                <span class="badge bad">Inactive</span>
-                            }
+                            <td>
+                                <div class="who-cell">
+                                    @if (!string.IsNullOrEmpty(t.PhotoPath))
+                                    {
+                                        <img class="photo-sm" src="@Url.Content("~" + t.PhotoPath)" alt="" />
+                                    }
+                                    <a asp-action="Details" asp-route-id="@t.Id"><b>@t.Name</b></a>@if (!t.IsActive) {
+                                    <span class="badge bad" style="margin-left:8px">Inactive</span>
+                                }
+                            </div>
                         </td>
                         <td>@t.StaffId</td>
                         <td class="muted">@t.Email</td>
                         <td class="num">@t.Classes</td>
-                        <td>@if (t.IsHallMaster) {
-                            <span class="badge info">Hall master</span>
-                        }
-                    </td>
-                    <td class="right nowrap"><a class="btn sm" asp-action="Details" asp-route-id="@t.Id">Open</a> <a class="btn sm" asp-action="Assign" asp-route-id="@t.Id">Assign</a></td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+                        <td>
+                            @if (t.IsHallMaster)
+                            {
+                                <span class="badge info">Hall master</span>
+                            }
+                        </td>
+                        <td class="right nowrap"><a class="btn sm" asp-action="Details" asp-route-id="@t.Id">Open</a> <a class="btn sm" asp-action="Assign" asp-route-id="@t.Id">Assign</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </div>
 </div>

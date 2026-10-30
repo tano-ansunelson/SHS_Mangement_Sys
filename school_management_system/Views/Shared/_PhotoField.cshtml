@@ -1,0 +1,10 @@
+﻿@using school_management_system.Models.Domain
+@model PhotoFieldVm
+<div class="field">
+    <label>@Model.Label</label>
+    <label class="drop"><input type="file" name="@Model.Name" accept=".jpg,.jpeg,.png,.webp" data-drop /><span class="drop-text">@(Model.Current == null ? "Drag & drop a file here or click" : "Replace photo")</span></label>
+    @if (!string.IsNullOrEmpty(Model.Current))
+    {
+        <img class="thumb" src="@Url.Content("~" + Model.Current)" alt="" />
+    }
+</div>

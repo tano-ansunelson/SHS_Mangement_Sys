@@ -60,7 +60,6 @@ namespace school_management_system.Service;
     }
 
 
-
     public async Task<(ApplicationUser User, string Password)> CreateAccountAsync(
       string fullName, string role, string emailDomain)
     {

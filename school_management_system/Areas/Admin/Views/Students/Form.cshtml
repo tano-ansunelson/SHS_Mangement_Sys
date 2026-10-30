@@ -1,66 +1,100 @@
 ﻿@using school_management_system.Models.Domain
+@using school_management_system.Models.Enums
 @model StudentVm
 @{
-    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit student" : "Register student";
+    var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit student" : "Add new student";
     var classes = ViewData["ClassData"] as List<ClassOptionRow> ?? new();
 }
-<div class="page-head"><div><h1>@ViewData["Title"]</h1>@if (!edit) {
-    <p>The student ID, school email and temporary password are generated automatically.</p>
+<div class="page-head"><div><h1>@ViewData["Title"]</h1><p>Dashboard / Students / @(edit ? "Edit" : "Add new")@if (!edit) {
+    <span> · the student ID, school email and temporary password are generated automatically</span>
 }
-</div></div>
-<div class="card">
-    <div class="card-body">
-        <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
-            <div asp-validation-summary="ModelOnly" class="field-validation-error"></div>
-            <input type="hidden" asp-for="Id" />
-            <div class="row2">
-                <div class="field"><label asp-for="FullName"></label><input asp-for="FullName" /><span asp-validation-for="FullName"></span></div>
-                <div class="field"><label asp-for="Gender"></label><select asp-for="Gender"><option value="Male">Male</option><option value="Female">Female</option></select></div>
-            </div>
-            <div class="row2">
-                <div class="field"><label>Date of birth</label><input type="date" name="DateOfBirth" value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))" /><span asp-validation-for="DateOfBirth"></span></div>
-                <div class="field"><label asp-for="Residence"></label><select asp-for="Residence" id="Residence"><option value="Day">Day student</option><option value="Boarding">Boarding student</option></select></div>
-            </div>
-            <div class="row2">
-                <div class="field"><label asp-for="GuardianName"></label><input asp-for="GuardianName" /><span asp-validation-for="GuardianName"></span></div>
-                <div class="field"><label asp-for="GuardianPhone"></label><input asp-for="GuardianPhone" /><span asp-validation-for="GuardianPhone"></span></div>
-            </div>
+</p></div></div>
+<form method="post" asp-action="@(edit ? "Edit" : "Create")" enctype="multipart/form-data">
+    <input type="hidden" asp-for="Id" />
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert error"><div asp-validation-summary="All"></div></div>
+    }
+
+    <div class="card">
+        <div class="card-head"><h2>Personal info</h2></div><div class="card-body">
+        <div class="row4">
             @if (!edit)
             {
-                <div class="row2">
-                    <div class="field"><label>Course</label><select id="courseFilter" asp-items="(SelectList)ViewBag.Courses"><option value="">Select course…</option></select></div>
-                    <div class="field">
-                        <label asp-for="ClassYearId"></label>
-                        <select asp-for="ClassYearId" id="ClassYearId">
-                            <option value="0">Select class…</option>
-                            @foreach (var c in classes)
-                            {
-                                <option value="@c.Id" data-course="@c.CourseId" selected="@(c.Id == Model.ClassYearId)">@c.Name</option>
-                            }
-                        </select>
-                        <span asp-validation-for="ClassYearId"></span>
-                        <div class="hint">The student takes the subjects assigned to the class, which stay the same through all three years.</div>
-                    </div>
+                <div class="field"><label>Academic year <span style="color:var(--bad)">*</span></label><select asp-for="AcademicYearId" id="AcademicYearId" asp-items="(SelectList)ViewBag.Years"></select></div>
+                <div class="field"><label>Course (section) <span style="color:var(--bad)">*</span></label><select id="courseFilter" asp-items="(SelectList)ViewBag.Courses"><option value="">All courses</option></select></div>
+                <div class="field">
+                    <label asp-for="ClassYearId">Class <span style="color:var(--bad)">*</span></label>
+                    <select asp-for="ClassYearId" id="ClassYearId">
+                        <option value="0">Select class…</option>
+                        @foreach (var c in classes)
+                        {
+                            <option value="@c.Id" data-course="@c.CourseId" data-year="@c.YearId" selected="@(c.Id == Model.ClassYearId)">@c.Name</option>
+                        }
+                    </select>
+                    <span asp-validation-for="ClassYearId"></span>
                 </div>
             }
+            <div class="field"><label asp-for="RollNumber"></label><input asp-for="RollNumber" placeholder="Enter roll number" /><span asp-validation-for="RollNumber"></span></div>
+
+            <div class="field"><label asp-for="AdmissionNumber"></label><input asp-for="AdmissionNumber" placeholder="Enter admission number" /><span asp-validation-for="AdmissionNumber"></span></div>
+            <div class="field"><label asp-for="FullName">Full name <span style="color:var(--bad)">*</span></label><input asp-for="FullName" placeholder="Enter full name" /><span asp-validation-for="FullName"></span></div>
+            <div class="field"><label asp-for="Category"></label><input asp-for="Category" placeholder="Enter category" /><span asp-validation-for="Category"></span></div>
+            <div class="field"><label asp-for="Gender"></label><select asp-for="Gender" asp-items="Html.GetEnumSelectList<Gender>()"></select></div>
+
+            <div class="field"><label>Date of birth <span style="color:var(--bad)">*</span></label><input type="date" name="DateOfBirth" value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))" /><span asp-validation-for="DateOfBirth"></span></div>
+            <div class="field"><label asp-for="Phone"></label><input asp-for="Phone" placeholder="Enter phone number" /><span asp-validation-for="Phone"></span></div>
+            <div class="field"><label asp-for="ContactEmail"></label><input asp-for="ContactEmail" placeholder="Enter email" /><span asp-validation-for="ContactEmail"></span></div>
+            <partial name="_PhotoField" model='new PhotoFieldVm("Photo", "Student photo", Model.PhotoPath)' />
+
+            <div class="field"><label asp-for="Residence"></label><select asp-for="Residence" id="Residence"><option value="Day">Day student</option><option value="Boarding">Boarding student</option></select></div>
             <div class="field" id="hallField">
-                <label asp-for="HallId"></label>
-                <select asp-for="HallId" asp-items="(SelectList)ViewBag.Halls"><option value="">Select hall…</option></select><span asp-validation-for="HallId"></span>
-                <div class="hint">The hall master will see this student and assign a room.</div>
+                <label asp-for="HallId"></label><select asp-for="HallId" asp-items="(SelectList)ViewBag.Halls"><option value="">Select hall…</option></select><span asp-validation-for="HallId"></span>
+                <div class="hint">The hall master sees boarding students and assigns rooms.</div>
             </div>
-            <div class="form-actions"><button class="btn primary">@(edit ? "Save changes" : "Register")</button><a class="btn" asp-action="Index">Cancel</a></div>
-        </form>
+        </div>
     </div>
 </div>
+
+<div class="card">
+    <div class="card-head"><h2>Parent &amp; guardian info</h2></div><div class="card-body">
+    <div class="section-note">Enter at least one parent or guardian with a name and a phone number.</div>
+    <div class="row4">
+        <div class="field"><label asp-for="FatherName"></label><input asp-for="FatherName" placeholder="Enter father's name" /><span asp-validation-for="FatherName"></span></div>
+        <div class="field"><label asp-for="FatherPhone"></label><input asp-for="FatherPhone" placeholder="Enter father's number" /><span asp-validation-for="FatherPhone"></span></div>
+        <div class="field"><label asp-for="FatherOccupation"></label><input asp-for="FatherOccupation" placeholder="Enter occupation" /></div>
+        <partial name="_PhotoField" model='new PhotoFieldVm("FatherPhoto", "Father\u2019s photo", Model.FatherPhotoPath)' />
+
+        <div class="field"><label asp-for="MotherName"></label><input asp-for="MotherName" placeholder="Enter mother's name" /><span asp-validation-for="MotherName"></span></div>
+        <div class="field"><label asp-for="MotherPhone"></label><input asp-for="MotherPhone" placeholder="Enter mother's number" /><span asp-validation-for="MotherPhone"></span></div>
+        <div class="field"><label asp-for="MotherOccupation"></label><input asp-for="MotherOccupation" placeholder="Enter occupation" /></div>
+        <partial name="_PhotoField" model='new PhotoFieldVm("MotherPhoto", "Mother\u2019s photo", Model.MotherPhotoPath)' />
+
+        <div class="field"><label asp-for="GuardianName"></label><input asp-for="GuardianName" placeholder="If different from parents" /><span asp-validation-for="GuardianName"></span></div>
+        <div class="field"><label asp-for="GuardianPhone"></label><input asp-for="GuardianPhone" placeholder="Enter guardian's number" /><span asp-validation-for="GuardianPhone"></span></div>
+    </div>
+</div>
+</div>
+
+<div class="form-actions"><button class="btn primary">@(edit ? "Save changes" : "Register student")</button><a class="btn" asp-action="Index">Cancel</a></div>
+</form>
 @section Scripts {
     <script>
         const res = document.getElementById('Residence'), hall = document.getElementById('hallField');
         const syncHall = () => hall.style.display = res.value === 'Boarding' ? '' : 'none';
         res.addEventListener('change', syncHall); syncHall();
-        const cf = document.getElementById('courseFilter'), cls = document.getElementById('ClassYearId');
-        if (cf && cls) cf.addEventListener('change', () => {
-            [...cls.options].forEach(o => { if (o.value !== '0') o.hidden = cf.value && o.dataset.course !== cf.value; });
-            cls.value = '0';
-        });
+
+        const yr = document.getElementById('AcademicYearId'), cf = document.getElementById('courseFilter'), cls = document.getElementById('ClassYearId');
+        if (yr && cf && cls) {
+            const filter = () => {
+                [...cls.options].forEach(o => {
+                    if (o.value === '0') return;
+                    const hide = (cf.value && o.dataset.course !== cf.value) || (yr.value && o.dataset.year !== yr.value);
+                    o.hidden = hide; o.disabled = hide;
+                });
+                if (cls.selectedOptions[0] && cls.selectedOptions[0].disabled) cls.value = '0';
+            };
+            yr.addEventListener('change', filter); cf.addEventListener('change', filter); filter();
+        }
     </script>
 }

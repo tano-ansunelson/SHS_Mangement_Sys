@@ -1,8 +1,4 @@
-﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-// for details on configuring this project to bundle and minify static web assets.
-
-// Write your JavaScript code.
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('menuBtn');
     if (btn) btn.addEventListener('click', () => document.body.classList.toggle('menu-open'));
 
@@ -29,4 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
         s.addEventListener('change', () => s.form.submit()));
 
     setTimeout(() => document.querySelectorAll('.alert.success').forEach(a => a.style.display = 'none'), 7000);
+});
+
+// photo fields: show the chosen file name inside the drop area
+document.addEventListener('change', e => {
+    const input = e.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'file' || !input.hasAttribute('data-drop')) return;
+    const box = input.closest('.drop'), text = box.querySelector('.drop-text');
+    if (input.files.length) { text.textContent = input.files[0].name; box.classList.add('has-file'); }
 });

@@ -66,9 +66,12 @@ public record ClassRow(int Id, string Course, int FormLevel, string Group, int S
 public class ClassVm
 {
     public int Id { get; set; }
-    [Required, Display(Name = "Course")] public int CourseId { get; set; }
-    [Range(1, 3), Display(Name = "Form (year group)")] public int FormLevel { get; set; } = 1;
-    [Required, StringLength(3)] public string Group { get; set; } = "A";
+    [Required, Display(Name = "Course")] 
+    public int CourseId { get; set; }
+    [Range(1, 3), Display(Name = "Form (year group)")]
+    public int FormLevel { get; set; } = 1;
+    [Required, StringLength(3)] 
+    public string Group { get; set; } = "A";
     public List<int> SubjectIds { get; set; } = new();
     public List<Subject> AllSubjects { get; set; } = new();
     public List<Course> Courses { get; set; } = new();
@@ -79,26 +82,104 @@ public class ClassVm
 
 public class TeacherVm
 {
-    public int Id { get; set; }
-    [Required, StringLength(120), Display(Name = "Full name")] public string FullName { get; set; } = "";
-    [Phone] public string? Phone { get; set; }
+     public int Id { get; set; }
+    [StringLength(30), Display(Name = "Teacher ID")]
+    public string? StaffId { get; set; }
+    [Required, StringLength(120), Display(Name = "Full name")] 
+    public string FullName { get; set; } = "";
+    public Gender? Gender { get; set; }
+    [Display(Name = "Date of birth")]
+    public DateOnly? DateOfBirth { get; set; }
+    [StringLength(120), Display(Name = "Father's name")]
+    public string? FatherName { get; set; }
+    [StringLength(120), Display(Name = "Mother's name")]
+    public string? MotherName { get; set; }
+    [Display(Name = "Marital status")]
+    public MaritalStatus? MaritalStatus { get; set; }
+    [Display(Name = "Contract type")]
+    public ContractType? ContractType { get; set; }
+    public Shift? Shift { get; set; }
+    [StringLength(120), Display(Name = "Work location")]
+    public string? WorkLocation { get; set; }
+    [Display(Name = "Join date")] 
+    public DateOnly? JoinDate { get; set; }
+    [Required, Phone, Display(Name = "Phone number")]
+    public string? Phone { get; set; }
+    [EmailAddress, Display(Name = "Email")]
+    public string? ContactEmail { get; set; }
+    [Range(0, 60), Display(Name = "Experience (years)")] 
+    public int? ExperienceYears { get; set; }
+    [StringLength(200)]
+    public string? Qualification { get; set; }
     public bool IsActive { get; set; } = true;
-    [Display(Name = "Class coordinator for (optional)")] public int? CoordinatorClassYearId { get; set; }
+    [Display(Name = "Class coordinator for (optional)")]
+    public int? CoordinatorClassYearId { get; set; }
+    public IFormFile? Photo { get; set; }
+    public string? PhotoPath { get; set; }
+
 }
 
-public class StudentVm
+    public class StudentVm
 {
     public int Id { get; set; }
-    [Required, StringLength(120), Display(Name = "Full name")] public string FullName { get; set; } = "";
+    [Required, StringLength(120), Display(Name = "Full name")] 
+    public string FullName { get; set; } = "";
     public Gender Gender { get; set; }
-    [Required, Display(Name = "Date of birth")] public DateOnly? DateOfBirth { get; set; }
-    [Required, StringLength(120), Display(Name = "Guardian name")] public string GuardianName { get; set; } = "";
-    [Required, Phone, Display(Name = "Guardian phone")] public string GuardianPhone { get; set; } = "";
-    [Display(Name = "Class")] public int ClassYearId { get; set; }
+    [Required, Display(Name = "Date of birth")] 
+    public DateOnly? DateOfBirth { get; set; }
+    [Display(Name = "Academic year")]
+    public int AcademicYearId { get; set; }
+    [Display(Name = "Class")]
+    public int ClassYearId { get; set; }
     public ResidenceType Residence { get; set; }
-    [Display(Name = "Hall")] public int? HallId { get; set; }
+    [Display(Name = "Hall")]
+    public int? HallId { get; set; }
+
+    [StringLength(30), Display(Name = "Roll number")]
+    public string? RollNumber { get; set; }
+    [StringLength(40), Display(Name = "Admission no")] 
+    public string? AdmissionNumber { get; set; }
+    [StringLength(60)] 
+    public string? Category { get; set; }
+    [Phone, Display(Name = "Phone number")]
+    public string? Phone { get; set; }
+    [EmailAddress, Display(Name = "Email")]
+    public string? ContactEmail { get; set; }
+
+    [StringLength(120), Display(Name = "Father's name")] 
+    public string? FatherName { get; set; }
+    [Phone, Display(Name = "Phone number")]
+    public string? FatherPhone { get; set; }
+    [StringLength(120), Display(Name = "Father's occupation")]
+    public string? FatherOccupation { get; set; }
+    [StringLength(120), Display(Name = "Mother's name")]
+     public string? MotherName { get; set; }
+    [Phone, Display(Name = "Phone number")] 
+    public string? MotherPhone { get; set; }
+    [StringLength(120), Display(Name = "Mother's occupation")]
+    public string? MotherOccupation { get; set; }
+    [StringLength(120), Display(Name = "Guardian's name")] 
+    public string? GuardianName { get; set; }
+    [Phone, Display(Name = "Guardian's phone")]
+    public string? GuardianPhone { get; set; }
+
+    public IFormFile? Photo { get; set; }
+    public IFormFile? FatherPhoto { get; set; }
+    public IFormFile? MotherPhoto { get; set; }
+    public string? PhotoPath { get; set; }          // display only; never trusted on post
+    public string? FatherPhotoPath { get; set; }
+    public string? MotherPhotoPath { get; set; }
+
+    /// <summary>At least one parent or guardian with both a name and a phone number.</summary>
+    public bool HasContact =>
+        (!string.IsNullOrWhiteSpace(FatherName) && !string.IsNullOrWhiteSpace(FatherPhone)) ||
+        (!string.IsNullOrWhiteSpace(MotherName) && !string.IsNullOrWhiteSpace(MotherPhone)) ||
+        (!string.IsNullOrWhiteSpace(GuardianName) && !string.IsNullOrWhiteSpace(GuardianPhone));
+
 }
 
+
+public record PhotoFieldVm(string Name, string Label, string? Current);
 public class HallVm
 {
     public int Id { get; set; }

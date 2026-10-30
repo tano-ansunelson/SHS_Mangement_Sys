@@ -6,19 +6,21 @@ using school_management_system.Data;
 using school_management_system.Models;
 using school_management_system.Models.Domain;
 using school_management_system.Service;
+//using static System.Net.WebRequestMethods;
 
 namespace school_management_system.Areas.Admin.Controllers;
 
-public record TeacherRow(int Id, string StaffId, string Name, string Email, string? Phone, bool IsActive, int Classes, bool IsHallMaster);
 
-public class TeachersController(AppDbContext db, TeacherService teachers, AccountAdminService accounts, UserManager<ApplicationUser> users) : AdminBase(db)
+public record TeacherRow(int Id, string StaffId, string Name, string Email, string? Phone, bool IsActive, int Classes, bool IsHallMaster, string? PhotoPath);
+
+public class TeachersController(AppDbContext db, TeacherService teachers, AccountAdminService accounts, UserManager<ApplicationUser> users, FileStorageService files) : AdminBase(db)
 {
     public async Task<IActionResult> Index()
     {
         var yearId = await CurrentYearIdAsync();
         var rows = await Db.Teachers.OrderBy(t => t.User.FullName).Select(t => new TeacherRow(t.Id, t.StaffId, t.User.FullName, t.User.Email!, t.Phone, t.IsActive,
             Db.TeachingAssignments.Count(a => a.TeacherId == t.Id && a.ClassYear.AcademicYearId == yearId),
-            Db.HallMasterAssignments.Any(h => h.TeacherId == t.Id && h.AcademicYearId == yearId))).ToListAsync();
+            Db.HallMasterAssignments.Any(h => h.TeacherId == t.Id && h.AcademicYearId == yearId), t.PhotoPath)).ToListAsync();
         return View(rows);
     }
 
@@ -28,9 +30,14 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
     public async Task<IActionResult> Create(TeacherVm vm)
     {
         if (!ModelState.IsValid) return View("Form", await Load(vm));
+        var saved = new List<string>();
         AccountCredentials? creds = null;
-        var ok = await Run(async () => creds = await teachers.CreateAsync(new CreateTeacherRequest(vm.FullName, vm.Phone, new(), vm.CoordinatorClassYearId)));
-        if (!ok) return View("Form", await Load(vm));
+        var ok = await Run(async () =>
+        {
+            var profile = await BuildProfileAsync(vm, saved);
+            creds = await teachers.CreateAsync(new CreateTeacherRequest(vm.FullName, vm.StaffId, profile, new(), vm.CoordinatorClassYearId));
+        });
+        if (!ok) { foreach (var p in saved) files.Delete(p); return View("Form", await Load(vm)); }
         ViewData["Back"] = Url.Action(nameof(Index));
         return View("Credentials", creds);
     }
@@ -53,7 +60,8 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
     public async Task<IActionResult> Edit(int id)
     {
         var t = await Db.Teachers.Include(x => x.User).SingleOrDefaultAsync(x => x.Id == id);
-        return t == null ? NotFound() : View("Form", new TeacherVm { Id = t.Id, FullName = t.User.FullName, Phone = t.Phone, IsActive = t.IsActive });
+        if (t == null) return NotFound();
+        return View("Form", await Load(ToVm(t)));
     }
 
     [HttpPost, ValidateAntiForgeryToken]
@@ -61,13 +69,21 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
     {
         var t = await Db.Teachers.Include(x => x.User).SingleOrDefaultAsync(x => x.Id == vm.Id);
         if (t == null) return NotFound();
-        if (!ModelState.IsValid) return View("Form", vm);
-        t.User.FullName = vm.FullName.Trim(); t.Phone = vm.Phone; t.IsActive = vm.IsActive; t.User.IsActive = vm.IsActive;
+        ModelState.Remove(nameof(vm.StaffId));
+        if (!ModelState.IsValid) { vm.StaffId = t.StaffId; vm.PhotoPath = t.PhotoPath; return View("Form", await Load(vm)); }
+
+        var saved = new List<string>(); var oldPhoto = t.PhotoPath;
+        TeacherProfile profile;
+        try { profile = await BuildProfileAsync(vm, saved); }
+        catch (DomainException e) { foreach (var p in saved) files.Delete(p); ModelState.AddModelError("", e.Message); vm.StaffId = t.StaffId; vm.PhotoPath = t.PhotoPath; return View("Form", await Load(vm)); }
+
+        t.User.FullName = vm.FullName.Trim(); t.IsActive = vm.IsActive; t.User.IsActive = vm.IsActive;
+        profile.ApplyTo(t);
         await Db.SaveChangesAsync();
+        if (profile.PhotoPath != null) files.Delete(oldPhoto);
         Flash("Teacher updated.");
         return RedirectToAction(nameof(Details), new { id = t.Id });
     }
-
     /// <summary>Choose a subject, then pick the classes (checkboxes) that teacher will take it in.</summary>
     public async Task<IActionResult> Assign(int id, int? subjectId)
     {
@@ -94,6 +110,7 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
         return ok ? RedirectToAction(nameof(Details), new { id }) : RedirectToAction(nameof(Assign), new { id, subjectId });
     }
 
+
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Unassign(int id, int teacherId)
     {
@@ -112,7 +129,6 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
         return View("Credentials", new AccountCredentials(t.User.FullName, t.User.Email!, pw!, t.StaffId));
     }
 
-
     public async Task<IActionResult> Delete(int id)
     {
         var t = await Db.Teachers.Include(x => x.User).SingleOrDefaultAsync(x => x.Id == id);
@@ -126,16 +142,62 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
         if (t == null) return NotFound();
         if (await Db.TeachingAssignments.AnyAsync(a => a.TeacherId == id) || await Db.HallMasterAssignments.AnyAsync(a => a.TeacherId == id) || await Db.ClassYears.AnyAsync(c => c.CoordinatorTeacherId == id))
         { Fail("This teacher has teaching history. Deactivate the account instead (Edit)."); return RedirectToAction(nameof(Details), new { id }); }
-        var user = t.User;
+        var user = t.User; var photo = t.PhotoPath;
         Db.Teachers.Remove(t);
         await Db.SaveChangesAsync();
         await users.DeleteAsync(user);
+        files.Delete(photo);
         Flash("Teacher deleted.");
         return RedirectToAction(nameof(Index));
     }
 
+    // ---------- helpers ----------
+    private async Task<TeacherProfile> BuildProfileAsync(TeacherVm vm, List<string> saved)
+    {
+        var photo = await files.SavePhotoAsync(vm.Photo, "teachers");
+        if (photo != null) saved.Add(photo);
+        return new TeacherProfile
+        {
+            Phone = vm.Phone,
+            Gender = vm.Gender,
+            DateOfBirth = vm.DateOfBirth,
+            FatherName = vm.FatherName,
+            MotherName = vm.MotherName,
+            MaritalStatus = vm.MaritalStatus,
+            ContractType = vm.ContractType,
+            Shift = vm.Shift,
+            WorkLocation = vm.WorkLocation,
+            JoinDate = vm.JoinDate,
+            ContactEmail = vm.ContactEmail,
+            ExperienceYears = vm.ExperienceYears,
+            Qualification = vm.Qualification,
+            PhotoPath = photo
+        };
+    }
 
 
+
+    private static TeacherVm ToVm(Models.Teacher t) => new()
+    {
+        Id = t.Id,
+        StaffId = t.StaffId,
+        FullName = t.User.FullName,
+        Gender = t.Gender,
+        DateOfBirth = t.DateOfBirth,
+        FatherName = t.FatherName,
+        MotherName = t.MotherName,
+        MaritalStatus = t.MaritalStatus,
+        ContractType = t.ContractType,
+        Shift = t.Shift,
+        WorkLocation = t.WorkLocation,
+        JoinDate = t.JoinDate,
+        Phone = t.Phone,
+        ContactEmail = t.ContactEmail,
+        ExperienceYears = t.ExperienceYears,
+        Qualification = t.Qualification,
+        IsActive = t.IsActive,
+        PhotoPath = t.PhotoPath
+    };
 
     private async Task<TeacherVm> Load(TeacherVm vm)
     {

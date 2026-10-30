@@ -8,7 +8,7 @@
 <div class="page-head"><div><h1>Students</h1><p>@ViewData["Total"] student(s) match.</p></div><div class="actions"><a class="btn primary" asp-action="Create">Register student</a></div></div>
 <div class="card">
     <form method="get" class="toolbar">
-        <input type="search" name="q" value="@q" placeholder="Name or student ID" />
+        <input type="search" name="q" value="@q" placeholder="Name, student ID or admission no" />
         <select name="courseId" asp-items="(SelectList)ViewBag.Courses"><option value="">All courses</option></select>
         <select name="classYearId" asp-items="(SelectList)ViewBag.Classes"><option value="">All classes</option></select>
         <select name="residence"><option value="">Day &amp; boarding</option><option value="Day" selected="@(residence == ResidenceType.Day)">Day</option><option value="Boarding" selected="@(residence == ResidenceType.Boarding)">Boarding</option></select>
@@ -28,43 +28,44 @@
                     @foreach (var s in Model)
                     {
                         <tr>
-                            <td><a asp-action="Details" asp-route-id="@s.Id"><b>@s.Name</b></a></td>
+                            <td><div class="who-cell">@if (!string.IsNullOrEmpty(s.PhotoPath)) {
+                                <img class="photo-sm" src="@Url.Content("~" + s.PhotoPath)" alt="" />
+                            }
+                            <a asp-action="Details" asp-route-id="@s.Id"><b>@s.Name</b></a></div></td>
                             <td>@s.Number</td>
                             <td>@(s.Class ?? "—")</td>
                             <td>@s.Course</td>
                             <td><span class="badge @(s.Residence == ResidenceType.Boarding ? "info" : "")">@s.Residence</span></td>
-                            <td>
-                                @if (s.Hall != null)
-                                {
-                                    <span>@s.Hall</span> <span class="muted">· @(s.Room != null ? "Room " + s.Room : "no room yet")</span>
-                                }
-                                else
-                                {
+                            <td>@if (s.Hall != null) {
+                                <span>@s.Hall</span> <span class="muted">· @(s.Room != null ? "Room " + s.Room : "no room yet")</span>
+                            } else
+                            {
 
-                                    <span class="muted">—</span>
-                                }
-                            </td>
-                            <td class="right nowrap"><a class="btn sm" asp-action="Details" asp-route-id="@s.Id">Open</a> <a class="btn sm" asp-action="Edit" asp-route-id="@s.Id">Edit</a></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-    </div>
-    @if (pages > 1)
-    {
-        <div class="toolbar" style="border-top:1px solid var(--line2);border-bottom:0;justify-content:space-between">
-            <span class="muted">Page  @pages</span>
-            <span class="actions">
-                @if (page > 1)
-                {
-                    <a class="btn sm" href="@Url.Action("Index", new { q, residence, status, page = page - 1 })">Previous</a>
+                                <span class="muted">—</span>
+                            }
+                        </td>
+                        <td class="right nowrap"><a class="btn sm" asp-action="Details" asp-route-id="@s.Id">Open</a> <a class="btn sm" asp-action="Edit" asp-route-id="@s.Id">Edit</a></td>
+                    </tr>
                 }
-                @if (page < pages)
-                {
-                    <a class="btn sm" href="@Url.Action("Index", new { q, residence, status, page = page + 1 })">Next</a>
-                }
-            </span>
-        </div>
+            </tbody>
+        </table>
     }
 </div>
+@if (pages > 1)
+{
+    <div class="toolbar" style="border-top:1px solid var(--line2);border-bottom:0;justify-content:space-between">
+        <span class="muted">Page @pages</span>
+        <span class="actions">
+            @if (page > 1)
+            {
+                <a class="btn sm" href="@Url.Action("Index", new { q, residence, status, page = page - 1 })">Previous</a>
+            }
+            @if (page < pages)
+            {
+                <a class="btn sm" href="@Url.Action("Index", new { q, residence, status, page = page + 1 })">Next</a>
+            }
+        </span>
+    </div>
+}
+</div>
+

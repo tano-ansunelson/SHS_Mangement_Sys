@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <Folder Include="Areas\HallMaster\" />
-    <Folder Include="Areas\Student\" />
+    <Folder Include="Areas\Student\Controllers\" />
     <Folder Include="Areas\Teacher\" />
   </ItemGroup>
 

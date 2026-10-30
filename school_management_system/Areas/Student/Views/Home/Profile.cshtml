@@ -1,0 +1,68 @@
+﻿@* @using school_management_system.Models.Enums
+@model ProfileVm
+@{
+    var s = Model.Student; string Show(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v;
+}
+<div class="page-head">
+    <div class="profile-head">
+        @if (!string.IsNullOrEmpty(s.PhotoPath))
+        {
+            <img class="photo-lg" src="@Url.Content("~" + s.PhotoPath)" alt="" />
+        }
+        else
+        {
+
+            <div class="photo-lg photo-ph">@s.User.FullName[0]</div>
+        }
+        <div><h1>@s.User.FullName</h1><p>@s.StudentNumber · @s.Course.Name</p></div>
+    </div>
+    <div class="actions"><a class="btn" asp-controller="Account" asp-action="ChangePassword" asp-area="">Change password</a></div>
+</div>
+<div class="grid g2">
+    <div class="card">
+        <div class="card-head"><h2>Personal details</h2></div><div class="card-body">
+        <dl class="kv">
+            <dt>Login email</dt>
+            <dd>@s.User.Email</dd>
+            <dt>Email</dt>
+            <dd>@Show(s.ContactEmail)</dd>
+            <dt>Phone</dt>
+            <dd>@Show(s.Phone)</dd>
+            <dt>Admission no</dt>
+            <dd>@Show(s.AdmissionNumber)</dd>
+            <dt>Roll number</dt>
+            <dd>@Show(s.RollNumber)</dd>
+            <dt>Gender</dt>
+            <dd>@s.Gender</dd>
+            <dt>Date of birth</dt>
+            <dd>@s.DateOfBirth.ToString("d MMM yyyy")</dd>
+        </dl>
+    </div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Parent &amp; guardian</h2></div><div class="card-body">
+    <dl class="kv">
+        <dt>Father</dt>
+        <dd>@Show(s.FatherName) <span class="muted small">@s.FatherPhone</span></dd>
+        <dt>Mother</dt>
+        <dd>@Show(s.MotherName) <span class="muted small">@s.MotherPhone</span></dd>
+        <dt>Guardian</dt>
+        <dd>@Show(s.GuardianName) <span class="muted small">@s.GuardianPhone</span></dd>
+    </dl>
+</div>
+</div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Boarding</h2></div><div class="card-body">
+    @if (s.Residence == ResidenceType.Day)
+    {
+        <p class="muted" style="margin:0">You are a day student.</p>
+    }
+    else
+    {
+
+        <dl class="kv"><dt>Hall</dt><dd>@(Model.Hall ?? "—")</dd><dt>Hall master</dt><dd>@(Model.HallMaster ?? "Not assigned")</dd><dt>Room</dt><dd>@(Model.Room ?? "Not assigned yet")</dd></dl>
+    }
+</div>
+</div>
+ *@

@@ -43,6 +43,7 @@ builder.Services.AddScoped<ResultWorkflowService>();
 builder.Services.AddScoped<PromotionService>();
 builder.Services.AddScoped<DashboardQueries>();
 builder.Services.AddScoped<MatrixService>();
+builder.Services.AddScoped<FileStorageService>();
 builder.Services.AddScoped<AccountAdminService>();
 
 
