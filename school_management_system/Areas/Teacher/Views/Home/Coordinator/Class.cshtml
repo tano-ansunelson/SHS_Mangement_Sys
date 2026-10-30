@@ -1,0 +1,72 @@
+﻿@using school_management_system.Areas.Teacher.Controllers
+@using school_management_system.Models.Domain
+@using school_management_system.Models.Enums
+@model MatrixVm?
+@{
+    var cyId = (int)ViewData["ClassYearId"]!; var aid = ViewData["AssessmentId"] as int?;
+    var subjects = ViewData["Subjects"] as List<SubjectStatus> ?? new();
+}
+<div class="page-head">
+    <div><h1>@ViewData["ClassName"]</h1><p>Coordinator view: check every subject's results before sending them to the admin.</p></div>
+    <div class="actions"><a class="btn" asp-action="Promotion" asp-route-classYearId="@cyId">Promotion list</a></div>
+</div>
+<div class="card">
+    <div class="toolbar">
+        <form method="get" style="display:flex;gap:10px;align-items:center">
+            <input type="hidden" name="classYearId" value="@cyId" /><label>Examination</label>
+            <select name="assessmentId" asp-items="(SelectList)ViewBag.Assessments" data-autosubmit></select>
+        </form>
+    </div>
+</div>
+@if (Model == null)
+{
+    <div class="card empty">No examinations to show yet.</div>
+}
+else
+{
+    <div class="card">
+        <div class="card-head">
+            <h2>Subject submissions</h2>
+            @{
+                var ready = subjects.Any() && subjects.All(s => s.AllSubmitted);
+            }
+            @if (ready)
+            {
+                <form method="post" asp-action="Review" data-confirm="Confirm all results are correct and send to the admin?"><input type="hidden" name="classYearId" value="@cyId" /><input type="hidden" name="assessmentId" value="@aid" /><button class="btn primary">Mark reviewed &amp; send to admin</button></form>
+            }
+        </div>
+        <div class="card-body flush table-wrap">
+            <table class="data">
+                <thead><tr><th>Subject</th><th>Teacher</th><th>Progress</th><th>Status</th><th>Send back</th></tr></thead>
+                <tbody>
+                    @foreach (var s in subjects)
+                    {
+                        <tr>
+                            <td><b>@s.Subject</b></td>
+                            <td>@(s.Teacher ?? "—")</td>
+                            <td>@s.Entered / @s.Students</td>
+                            <td>@foreach (var kv in s.Counts) {
+                                <span class="badge @Ui.Status(kv.Key)">@kv.Key @kv.Value</span>
+                            }
+                            @if (!s.Counts.Any())
+                            {
+                                <span class="muted">Nothing entered</span>
+                            }
+                        </td>
+                        <td>
+                            @if (s.Counts.ContainsKey(ResultStatus.Submitted))
+                            {
+                                <form method="post" asp-action="Return" style="display:flex;gap:6px">
+                                    <input type="hidden" name="classYearId" value="@cyId" /><input type="hidden" name="assessmentId" value="@aid" /><input type="hidden" name="subjectId" value="@s.SubjectId" />
+                                    <input type="text" name="note" placeholder="What to correct" style="min-width:180px" /><button class="btn sm">Return</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<partial name="_ResultMatrix" model="Model" />
+}

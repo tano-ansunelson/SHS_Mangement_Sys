@@ -1,0 +1,31 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@model List<RoomStatus>
+@{
+    var students = (List<HallStudentRow>)ViewData["Students"]!; var placed = students.Count(s => s.RoomNumber != null); var beds = Model.Sum(r => r.Capacity); var occ = Model.Sum(r => r.Occupied);
+}
+<div class="page-head">
+    <div><h1>@ViewData["HallName"]</h1><p>Place registered students in rooms. Green rooms have space; red rooms are full.</p></div>
+    <div class="actions"><a class="btn primary" asp-controller="Students" asp-action="Index">Assign students</a></div>
+</div>
+<div class="stats">
+    <div class="stat"><div class="num">@students.Count</div><div class="label">Students in hall</div></div>
+    <div class="stat"><div class="num">@placed</div><div class="label">Have a room</div></div>
+    <div class="stat"><div class="num">@(students.Count - placed)</div><div class="label">Waiting for a room</div></div>
+    <div class="stat"><div class="num">@occ / @beds</div><div class="label">Beds filled</div><div class="sub">@Model.Count rooms</div></div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Rooms</h2><span><span class="badge ok">Space available</span> <span class="badge bad">Full</span></span></div><div class="card-body">
+    @if (!Model.Any())
+    {
+        <div class="muted">The admin has not added rooms to this hall yet.</div>
+    }
+    <div class="rooms">@foreach (var r in Model) {
+        <a class="room @r.Color" asp-controller="Rooms" asp-action="Details" asp-route-id="@r.RoomId"><b>@r.Number</b><span class="small">@r.Occupied / @r.Capacity</span></a>
+    }
+</div>
+</div>
+</div>

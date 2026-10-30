@@ -1,0 +1,51 @@
+﻿@using school_management_system.Areas.Teacher.Controllers
+@using school_management_system.Models.Enums
+@model List<PromotionRow>
+@{
+    var cyId = (int)ViewData["ClassYearId"]!; var form = (int)ViewData["Form"]!;
+    var submitted = ViewData["Submitted"] is true; var approved = ViewData["Approved"] is true; var note = ViewData["Note"] as string;
+    var locked = submitted || approved;
+}
+<div class="page-head">
+    <div><h1>Promotion · @ViewData["ClassName"]</h1><p>@(form == 3 ? "Form 3 students you promote will graduate after WASSCE." : "Decide who moves up to Form " + (form + 1) + " and who repeats.")</p></div>
+    <div class="actions"><a class="btn" asp-action="Class" asp-route-classYearId="@cyId">Back to class</a></div>
+</div>
+@if (!string.IsNullOrEmpty(note))
+{
+    <div class="alert error"><b>Sent back by admin:</b> @note</div>
+}
+@if (approved)
+{
+    <div class="alert success">The admin has approved this promotion list.</div>
+}
+else if (submitted)
+{
+
+    <div class="alert info">Sent to the admin and waiting for a decision.</div>
+}
+<form method="post" asp-action="SavePromotion">
+    <input type="hidden" name="classYearId" value="@cyId" />
+    <div class="card">
+        <div class="card-body flush table-wrap">
+            <table class="data">
+                <thead><tr><th>Student</th><th>ID</th><th class="num">Average score</th><th>@(form == 3 ? "Graduate" : "Promote")</th><th>Repeat</th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td><b>@r.Name</b></td>
+                            <td>@r.Number</td>
+                            <td class="num">@(r.Average?.ToString("0.#") ?? "—")</td>
+                            <td><input type="radio" name="decisions[@r.EnrollmentId]" value="Promote" checked="@(r.Decision == PromotionDecision.Promote)" disabled="@locked" /></td>
+                            <td><input type="radio" name="decisions[@r.EnrollmentId]" value="Repeat" checked="@(r.Decision == PromotionDecision.Repeat)" disabled="@locked" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @if (!locked && Model.Any())
+    {
+        <div class="actions"><button class="btn">Save draft</button><button class="btn primary" name="submit" value="true" onclick="return confirm('Send this list to the admin? You cannot change it afterwards.')">Save &amp; send to admin</button></div>
+    }
+</form>

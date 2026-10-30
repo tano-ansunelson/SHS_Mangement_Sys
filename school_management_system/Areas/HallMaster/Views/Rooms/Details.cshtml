@@ -1,0 +1,58 @@
+﻿@{
+    var room = (Room)ViewData["Room"]!;
+    var occupants = (List<HallStudentRow>)ViewData["Occupants"]!;
+    var unplaced = (List<HallStudentRow>)ViewData["Unplaced"]!;
+    var full = occupants.Count >= room.Capacity;
+}
+<div class="page-head">
+    <div><h1>Room @room.Number</h1><p>@occupants.Count of @room.Capacity beds filled · <span class="badge @(full ? "bad" : "ok")">@(full ? "Full" : "Space available")</span></p></div>
+    <div class="actions"><a class="btn" asp-action="Index">All rooms</a></div>
+</div>
+<div class="grid g2">
+    <div class="card">
+        <div class="card-head"><h2>Students in this room</h2></div><div class="card-body flush table-wrap">
+        @if (!occupants.Any())
+        {
+            <div class="empty">Nobody here yet.</div>
+        }
+        else
+        {
+            <table class="data">
+                <tbody>
+                    @foreach (var s in occupants)
+                    {
+                        <tr>
+                            <td><b>@s.Name</b><div class="muted small">@s.StudentNumber</div></td>
+                            <td class="right"><form class="inline" method="post" asp-action="Remove" data-confirm="Remove @s.Name from this room?"><input type="hidden" name="studentId" value="@s.StudentId" /><input type="hidden" name="roomId" value="@room.Id" /><button class="btn sm link-danger">Remove</button></form></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+<div class="card">
+    <div class="card-head"><h2>Add a student</h2></div><div class="card-body">
+    @if (full)
+    {
+        <div class="muted">This room is full.</div>
+    }
+    else if (!unplaced.Any())
+    {
+
+        <div class="muted">Every student in your hall already has a room.</div>
+    }
+    else
+    {
+        <form method="post" asp-action="Allocate" class="form" style="display:flex;gap:8px">
+            <input type="hidden" name="roomId" value="@room.Id" />
+            <select name="studentId" required><option value="">Select student…</option>@foreach (var s in unplaced) {
+                <option value="@s.StudentId">@s.Name (@s.StudentNumber)</option>
+            }
+        </select>
+        <button class="btn primary">Add</button>
+    </form>
+}
+</div>
+</div>
+</div>

@@ -1,0 +1,28 @@
+﻿@using school_management_system.Models.Domain
+@model List<RoomStatus>
+<div class="page-head"><div><h1>Rooms</h1><p>@ViewData["HallName"]</p></div></div>
+<div class="card">
+    <div class="card-body flush table-wrap">
+        @if (!Model.Any())
+        {
+            <div class="empty">No rooms yet.</div>
+        }
+        else
+        {
+            <table class="data">
+                <thead><tr><th>Room</th><th>Occupancy</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td><b>@r.Number</b></td>
+                            <td><div class="progress" style="width:140px"><span style="width:@Ui.Pct(r.Occupied, r.Capacity)%"></span></div><div class="muted small">@r.Occupied of @r.Capacity</div></td>
+                            <td><span class="badge @(r.IsFull ? "bad" : "ok")">@(r.IsFull ? "Full" : "Space available")</span></td>
+                            <td class="right"><a class="btn sm" asp-action="Details" asp-route-id="@r.RoomId">Open</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

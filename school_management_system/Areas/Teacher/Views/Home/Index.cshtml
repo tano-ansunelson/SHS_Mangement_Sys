@@ -1,0 +1,58 @@
+﻿@using school_management_system.Areas.Teacher.Controllers
+@model TeacherDash
+@{
+    ViewData["Title"] = "Dashboard";
+}
+<div class="page-head">
+    <div><h1>Welcome, @Model.Name.Split(' ')[0]</h1><p>Your classes and examinations this academic year.</p></div>
+    <div class="actions"><a class="btn primary" asp-controller="Results" asp-action="Index">Enter results</a></div>
+</div>
+<div class="stats">
+    <div class="stat"><div class="num">@Model.Subjects.Count</div><div class="label">Subjects taught</div></div>
+    <div class="stat"><div class="num">@Model.Classes</div><div class="label">Classes</div></div>
+    <div class="stat"><div class="num">@Model.Students</div><div class="label">Students</div></div>
+    <div class="stat"><div class="num">@Model.Coordinated.Count</div><div class="label">Classes coordinated</div></div>
+</div>
+<div class="page-head" style="margin-bottom:12px"><h2>My subjects</h2></div>
+@if (!Model.Subjects.Any())
+{
+    <div class="card empty">You have not been assigned any subjects yet. The admin assigns subjects and classes.</div>
+}
+<div class="grid g3" style="margin-bottom:24px">
+    @foreach (var s in Model.Subjects)
+    {
+        <div class="tile" style="cursor:default">
+            <h3>@s.Subject</h3><div class="muted small">@s.Classes.Count class(es)</div>
+            <ul style="list-style:none;padding:0">@foreach (var c in s.Classes) {
+                <li style="margin:6px 0"><a asp-controller="Classes" asp-action="Students" asp-route-classYearId="@c.ClassYearId" asp-route-subjectId="@s.SubjectId">@c.ClassName</a></li>
+            }
+        </ul>
+    </div>
+}
+</div>
+@if (Model.Coordinated.Any())
+{
+    <div class="card">
+        <div class="card-head"><h2>Classes I coordinate</h2></div><div class="card-body">
+        <div class="actions">@foreach (var c in Model.Coordinated) {
+            <a class="btn" asp-controller="Coordinator" asp-action="Class" asp-route-classYearId="@c.ClassYearId">@c.ClassName</a> <a class="btn ghost" asp-controller="Coordinator" asp-action="Promotion" asp-route-classYearId="@c.ClassYearId">Promotion</a>
+        }
+    </div>
+</div>
+</div>
+}
+<div class="card">
+    <div class="card-head"><h2>Examinations this year</h2></div><div class="card-body flush table-wrap">
+    @if (!Model.Assessments.Any())
+    {
+        <div class="empty">The admin has not created any examinations yet.</div>
+    }
+    else
+    {
+        <table class="data"><tbody>@foreach (var a in Model.Assessments) {
+            <tr><td><b>@a.Name</b></td><td><span class="badge @(a.IsOpen ? "ok" : "")">@(a.IsOpen ? "Open for score entry" : "Closed")</span></td><td class="right"><a class="btn sm" asp-controller="Results" asp-action="Index" asp-route-assessmentId="@a.Id">Enter scores</a></td></tr>
+        }
+    </tbody></table>
+}
+</div>
+</div>

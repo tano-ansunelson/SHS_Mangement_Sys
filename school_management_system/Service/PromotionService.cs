@@ -8,7 +8,7 @@ namespace school_management_system.Service;
 public class PromotionService(AppDbContext db)
 {
 
-    public async Task RecommedAsync(int coordinatorTeacherId, int classYearId,
+    public async Task RecommendAsync(int coordinatorTeacherId, int classYearId,
         IEnumerable<(int EnrollementId, PromotionDecision Decision)> decisions)
     {
         if (!await db.ClassYears.AnyAsync(c => c.Id == classYearId && c.CoordinatorTeacherId == coordinatorTeacherId))
