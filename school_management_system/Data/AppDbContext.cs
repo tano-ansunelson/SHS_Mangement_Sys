@@ -74,6 +74,7 @@ namespace school_management_system.Data;
         b.Entity<Teacher>().HasIndex(x => x.UserId).IsUnique();
         b.Entity<Student>().HasIndex(x => x.StudentNumber).IsUnique();
         b.Entity<Student>().HasIndex(x => x.UserId).IsUnique();
+        b.Entity<Student>().HasIndex(x => x.AdmissionNumber).IsUnique();
         b.Entity<Course>().HasIndex(x => x.Name).IsUnique();
         b.Entity<Subject>().HasIndex(x => x.Code).IsUnique();
         b.Entity<SchoolClass>().HasIndex(x => new { x.CourseId, x.FormLevel, x.Group }).IsUnique();

@@ -18,4 +18,7 @@ public enum EnrollmentOutcome { Pending, Promoted, Repeated, Graduated, Withdraw
 public enum AssessmentType { Midterm, Final }
 public enum ResultStatus { Draft, Submitted, Returned, Reviewed, Approved, Published }
 public enum PromotionDecision { Promote, Repeat }
+public enum MaritalStatus { Single, Married}
 public enum AdminDecision { Pending, Approved, Rejected }
+public enum Shift { Day, Evening }
+public enum ContractType { Permanent, Contract, PartTime}
