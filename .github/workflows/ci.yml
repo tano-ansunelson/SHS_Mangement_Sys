@@ -1,0 +1,58 @@
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  DOTNET_VERSION: 8.0.x
+  PROJECT_DIR: .
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Publish
+        if: github.event_name == 'push'
+        run: dotnet publish --configuration Release --output ./publish
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Upload build artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: school-system
+          path: ${{ env.PROJECT_DIR }}/publish
+          retention-days: 7
