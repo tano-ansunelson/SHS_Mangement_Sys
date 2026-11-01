@@ -34,3 +34,24 @@ document.addEventListener('change', e => {
     const box = input.closest('.drop'), text = box.querySelector('.drop-text');
     if (input.files.length) { text.textContent = input.files[0].name; box.classList.add('has-file'); }
 });
+
+
+// ---------- light / dark theme ----------
+(function () {
+    const root = document.documentElement;
+    const label = () => document.querySelectorAll('[data-theme-label]').forEach(el =>
+        el.textContent = root.dataset.theme === 'dark' ? 'Light mode' : 'Dark mode');
+    const apply = t => { root.dataset.theme = t; label(); };
+    document.addEventListener('DOMContentLoaded', () => {
+        label();
+        document.querySelectorAll('[data-theme-toggle]').forEach(b => b.addEventListener('click', () => {
+            const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+            try { localStorage.setItem('theme', next); } catch (e) { }
+            apply(next);
+        }));
+    });
+    if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        let saved = null; try { saved = localStorage.getItem('theme'); } catch (x) { }
+        if (!saved) apply(e.matches ? 'dark' : 'light');
+    });
+})();

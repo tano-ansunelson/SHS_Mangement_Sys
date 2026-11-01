@@ -16,6 +16,30 @@
     --warn-bg: #f8f0dd;
     --info: #2f4f7a;
     --info-bg: #e8eef6;
+    --surface-2: #fafaf8;
+    --hover: #f4f4f1;
+    --hover-2: #fbfbf9;
+    --nav-text: #3a4048;
+    --nav-group: #9aa0a6;
+    --switch-bg: #f7f7f4;
+    --input-bg: #fff;
+    --input-border: #d6d6d0;
+    --readonly-bg: #f4f4f1;
+    --readonly-text: #777;
+    --badge-bg: #eee;
+    --badge-text: #555;
+    --track: #ececE7;
+    --drop-border: #bdbdb5;
+    --photo-bg: #f1f1ed;
+    --ok-border: #cfe5d7;
+    --bad-border: #efcdc8;
+    --info-border: #d3deec;
+    --primary: #1c2733;
+    --primary-text: #fff;
+    --primary-hover: #2a3a4b;
+    --danger-btn: #b3382c;
+    --art-bg: #1c2733;
+    color-scheme: light;
     --radius: 10px;
     --shadow: 0 1px 2px rgba(20,25,30,.05),0 1px 8px rgba(20,25,30,.04);
 }
@@ -98,8 +122,8 @@ a {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: var(--ink);
-    color: #fff;
+    background: var(--primary);
+    color: var(--primary-text);
     display: grid;
     place-items: center;
     font-family: 'Playfair Display',serif;
@@ -128,7 +152,7 @@ a {
     font-size: 10.5px;
     letter-spacing: .1em;
     text-transform: uppercase;
-    color: #9aa0a6;
+    color: var(--nav-group);
     padding: 16px 10px 6px
 }
 
@@ -136,13 +160,13 @@ a {
     display: block;
     padding: 9px 12px;
     border-radius: 8px;
-    color: #3a4048;
+    color: var(--nav-text);
     margin: 1px 0;
     border-left: 3px solid transparent
 }
 
     .nav a:hover {
-        background: #f4f4f1;
+        background: var(--hover);
         text-decoration: none
     }
 
@@ -156,7 +180,7 @@ a {
 .switch {
     margin: 8px 12px;
     padding: 10px 12px;
-    background: #f7f7f4;
+    background: var(--switch-bg);
     border: 1px dashed var(--line);
     border-radius: 8px;
     font-size: 12.5px
@@ -396,7 +420,7 @@ table.data {
         color: var(--muted);
         font-weight: 500;
         padding: 11px 16px;
-        background: #fafaf8;
+        background: var(--surface-2);
         border-bottom: 1px solid var(--line);
         white-space: nowrap
     }
@@ -412,7 +436,7 @@ table.data {
     }
 
     table.data tbody tr:hover {
-        background: #fbfbf9
+        background: var(--hover-2)
     }
 
     table.data td.num, table.data th.num {
@@ -454,28 +478,28 @@ table.data {
 }
 
     .btn:hover {
-        background: #f4f4f1;
+        background: var(--hover);
         text-decoration: none
     }
 
     .btn.primary {
-        background: var(--ink);
-        border-color: var(--ink);
-        color: #fff
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-text)
     }
 
         .btn.primary:hover {
-            background: #2a3a4b
+            background: var(--primary-hover)
         }
 
     .btn.danger {
-        background: var(--bad);
-        border-color: var(--bad);
+        background: var(--danger-btn);
+        border-color: var(--danger-btn);
         color: #fff
     }
 
         .btn.danger:hover {
-            background: #9a2f25
+            filter: brightness(.9)
         }
 
     .btn.ghost {
@@ -508,8 +532,8 @@ form.inline {
     border-radius: 999px;
     font-size: 12px;
     font-weight: 500;
-    background: #eee;
-    color: #555
+    background: var(--badge-bg);
+    color: var(--badge-text)
 }
 
     .badge.ok {
@@ -554,9 +578,9 @@ form.inline {
 input[type=text], input[type=email], input[type=password], input[type=number], input[type=date], input[type=search], select, textarea {
     width: 100%;
     padding: 9px 12px;
-    border: 1px solid #d6d6d0;
+    border: 1px solid var(--input-border);
     border-radius: 8px;
-    background: #fff;
+    background: var(--input-bg);
     font: inherit;
     color: inherit
 }
@@ -567,8 +591,8 @@ input[type=text], input[type=email], input[type=password], input[type=number], i
     }
 
     input[readonly], input:disabled, select:disabled {
-        background: #f4f4f1;
-        color: #777
+        background: var(--readonly-bg);
+        color: var(--readonly-text)
     }
 
 .hint {
@@ -608,11 +632,11 @@ input[type=text], input[type=email], input[type=password], input[type=number], i
     border: 1px solid var(--line);
     border-radius: 8px;
     cursor: pointer;
-    background: #fff
+    background: var(--input-bg)
 }
 
     .check:hover {
-        background: #fafaf8
+        background: var(--surface-2)
     }
 
     .check input {
@@ -634,19 +658,19 @@ input[type=text], input[type=email], input[type=password], input[type=number], i
     .alert.success {
         background: var(--ok-bg);
         color: var(--ok);
-        border-color: #cfe5d7
+        border-color: var(--ok-border)
     }
 
     .alert.error {
         background: var(--bad-bg);
         color: var(--bad);
-        border-color: #efcdc8
+        border-color: var(--bad-border)
     }
 
     .alert.info {
         background: var(--info-bg);
         color: var(--info);
-        border-color: #d3deec
+        border-color: var(--info-border)
     }
 
 dl.kv {
@@ -675,14 +699,14 @@ dl.kv {
         padding: 7px 16px;
         border: 1px solid var(--line);
         border-radius: 999px;
-        background: #fff;
+        background: var(--surface);
         color: var(--text)
     }
 
         .tabs a.active {
-            background: var(--ink);
-            color: #fff;
-            border-color: var(--ink);
+            background: var(--primary);
+            color: var(--primary-text);
+            border-color: var(--primary);
             text-decoration: none
         }
 
@@ -715,19 +739,19 @@ dl.kv {
 
     .room.green {
         background: var(--ok-bg);
-        border-color: #bddbc8;
+        border-color: var(--ok-border);
         color: var(--ok)
     }
 
     .room.red {
         background: var(--bad-bg);
-        border-color: #ecc3be;
+        border-color: var(--bad-border);
         color: var(--bad)
     }
 
 .progress {
     height: 8px;
-    background: #ececE7;
+    background: var(--track);
     border-radius: 99px;
     overflow: hidden
 }
@@ -742,13 +766,13 @@ dl.kv {
     border: 2px dashed var(--line);
     border-radius: 10px;
     padding: 22px;
-    background: #fafaf8;
+    background: var(--surface-2);
     font-size: 16px
 }
 
     .credbox code {
         font-size: 17px;
-        background: #fff;
+        background: var(--surface);
         border: 1px solid var(--line);
         padding: 2px 8px;
         border-radius: 6px
@@ -762,7 +786,7 @@ dl.kv {
 }
 
 .auth-art {
-    background: var(--ink);
+    background: var(--art-bg);
     color: #e9edf1;
     padding: 64px;
     display: flex;
@@ -888,11 +912,11 @@ dl.kv {
     justify-content: center;
     min-height: 42px;
     padding: 8px 12px;
-    border: 1px dashed #bdbdb5;
+    border: 1px dashed var(--drop-border);
     border-radius: 8px;
     color: var(--muted);
     cursor: pointer;
-    background: #fafaf8;
+    background: var(--surface-2);
     text-align: center
 }
 
@@ -936,7 +960,7 @@ dl.kv {
     border-radius: 14px;
     object-fit: cover;
     border: 1px solid var(--line);
-    background: #f1f1ed;
+    background: var(--photo-bg);
     flex: none
 }
 
@@ -957,4 +981,91 @@ dl.kv {
 .who-cell {
     display: flex;
     align-items: center
+}
+
+/* ---------- dark theme ---------- */
+html[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14171b;
+    --surface: #1b1f24;
+    --surface-2: #20252b;
+    --line: #2c323a;
+    --line2: #252a31;
+    --text: #e7e9ec;
+    --muted: #98a1ab;
+    --ink: #e7e9ec;
+    --accent: #8fb4cb;
+    --accent-soft: #26333d;
+    --ok: #6fcf97;
+    --ok-bg: #1c3326;
+    --ok-border: #2a4d38;
+    --bad: #f08a7e;
+    --bad-bg: #3a2220;
+    --bad-border: #5a312d;
+    --warn: #e6b85c;
+    --warn-bg: #3a3019;
+    --info: #8fb3e6;
+    --info-bg: #1f2c3f;
+    --info-border: #2d4263;
+    --hover: #262c33;
+    --hover-2: #21262c;
+    --nav-text: #c5ccd3;
+    --nav-group: #707a85;
+    --switch-bg: #20252b;
+    --input-bg: #161a1e;
+    --input-border: #3a424b;
+    --readonly-bg: #20252b;
+    --readonly-text: #8a939d;
+    --badge-bg: #2b3138;
+    --badge-text: #c5ccd3;
+    --track: #2b3138;
+    --drop-border: #4a535d;
+    --photo-bg: #242a31;
+    --primary: #e7e9ec;
+    --primary-text: #14171b;
+    --primary-hover: #cfd4d9;
+    --danger-btn: #c4483b;
+    --art-bg: #0f1215;
+    --shadow: 0 1px 2px rgba(0,0,0,.4),0 1px 8px rgba(0,0,0,.3);
+}
+
+    html[data-theme="dark"] table.data tbody tr:hover {
+        background: var(--hover-2)
+    }
+
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px
+}
+
+    .theme-toggle .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--primary);
+        border: 2px solid var(--line)
+    }
+
+.theme-float {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 30
+}
+
+@media print {
+    html[data-theme="dark"] {
+        --bg: #fff;
+        --surface: #fff;
+        --surface-2: #fff;
+        --text: #000;
+        --muted: #555;
+        --line: #ddd;
+        --line2: #eee
+    }
+
+    .theme-toggle {
+        display: none !important
+    }
 }
