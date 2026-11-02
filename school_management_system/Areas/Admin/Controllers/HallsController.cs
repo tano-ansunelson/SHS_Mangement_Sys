@@ -65,7 +65,7 @@ public class HallsController(AppDbContext db, HallService halls, RoomAllocationS
         var y = await CurrentYearIdAsync();
         ViewData["Title"] = h.Name;
         ViewData["Master"] = await Db.HallMasterAssignments.Where(m => m.HallId == id && m.AcademicYearId == y).Select(m => m.Teacher.User.FullName).FirstOrDefaultAsync();
-        ViewData["Rooms"] = await Db.Rooms.Where(r => r.HallId == id).OrderBy(r => r.Number)
+        ViewData["Rooms"] = await Db.Rooms.Where(r => r.HallId == id).OrderByDescending(r => r.Number)
             .Select(r => new RoomRow(r.Id, r.Number, r.Capacity, Db.RoomAllocations.Count(a => a.RoomId == r.Id && a.AcademicYearId == y))).ToListAsync();
         ViewData["Students"] = await Db.HallRegistrations.Where(r => r.HallId == id && r.AcademicYearId == y).OrderBy(r => r.Student.User.FullName)
             .Select(r => new HallStudent(r.StudentId, r.Student.User.FullName, r.Student.StudentNumber,
