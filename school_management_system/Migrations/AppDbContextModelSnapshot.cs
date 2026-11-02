@@ -557,14 +557,14 @@ namespace school_management_system.Migrations
                     b.Property<int>("AssessmentId")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("ClassScore")
+                    b.Property<decimal?>("ClassScore")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
                     b.Property<int>("EnrollmentId")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("ExamScore")
+                    b.Property<decimal?>("ExamScore")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
@@ -587,7 +587,7 @@ namespace school_management_system.Migrations
                     b.Property<int>("SubjectId")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("Total")
+                    b.Property<decimal?>("Total")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 

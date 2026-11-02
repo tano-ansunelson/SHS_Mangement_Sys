@@ -18,7 +18,7 @@
 <form method="post" asp-action="Save">
     <input type="hidden" asp-for="ClassYearId" /><input type="hidden" asp-for="SubjectId" /><input type="hidden" asp-for="AssessmentId" />
     <div class="card">
-        <div class="card-head"><h2>Scores</h2><span class="muted small">Class score out of @Model.MaxClass.ToString("0.#") · Exam score out of @Model.MaxExam.ToString("0.#")</span></div>
+        <div class="card-head"><h2>Scores</h2><span class="muted small">You can save a class score now and add the exam score later · Class score out of @Model.MaxClass.ToString("0.#") · Exam score out of @Model.MaxExam.ToString("0.#")</span></div>
         <div class="card-body flush table-wrap">
             @if (!Model.Rows.Any())
             {
@@ -62,7 +62,7 @@
 {
     <form method="post" asp-action="Submit" class="inline" data-confirm="Submit these results to the class coordinator? You cannot edit them afterwards unless they are returned." style="display:block;margin-top:12px">
         <input type="hidden" name="classYearId" value="@Model.ClassYearId" /><input type="hidden" name="subjectId" value="@Model.SubjectId" /><input type="hidden" name="assessmentId" value="@Model.AssessmentId" />
-        <button class="btn">Submit to coordinator</button> <span class="muted small">Save first. Every student needs scores before you can submit.</span>
+        <button class="btn">Submit to coordinator</button> <span class="muted small">Save first. Every student needs both a class score and an exam score before you can submit.</span>
     </form>
 }
 @section Scripts {

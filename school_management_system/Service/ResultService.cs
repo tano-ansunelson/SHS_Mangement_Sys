@@ -13,16 +13,14 @@ public record StudentResultRow(
 public class GradingService(AppDbContext db, IOptions<GradingOptions> opt)
 {
 
-    public async Task<(decimal Total, string Grade)> ComputeAsync(decimal classScore, decimal examScore)
+    public async Task<(decimal? Total, string Grade)> ComputeAsync(decimal? classScore, decimal? examScore)
     {
         var o = opt.Value;
-        if (classScore < 0 || classScore > o.MaxClassScore)
-            throw new DomainException($"Class score must be between 0 and {o.MaxClassScore}.");
-        if (examScore < 0 || examScore > o.MaxExamScore)
-            throw new DomainException($"Exam score must be between 0 and {o.MaxExamScore}.");
-        var total = classScore + examScore;
-        var grade = await db.GradeBoundaries.
-            Where(g => g.MinScore <= total)
+        if (classScore < 0 || classScore > o.MaxClassScore) throw new DomainException($"Class score must be between 0 and {o.MaxClassScore}.");
+        if (examScore < 0 || examScore > o.MaxExamScore) throw new DomainException($"Exam score must be between 0 and {o.MaxExamScore}.");
+        if (classScore is null || examScore is null) return (null, "");
+        var total = classScore.Value + examScore.Value;
+        var grade = await db.GradeBoundaries.Where(g => g.MinScore <= total)
             .OrderByDescending(g => g.MinScore).Select(g => g.Grade).FirstOrDefaultAsync() ?? "F9";
         return (total, grade);
     }
@@ -37,7 +35,7 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
 
     // ---------- Teacher ----------
     public async Task SaveDraftAsync(int teacherId, int enrollmentId, int subjectId, int assessmentId,
-        decimal classScore, decimal examScore, string actorUserId)
+       decimal? classScore, decimal? examScore, string actorUserId)
     {
         var enr = await db.Enrollments.Include(e => e.ClassYear).ThenInclude(c => c.SchoolClass)
                       .SingleOrDefaultAsync(e => e.Id == enrollmentId) ?? throw new DomainException("Enrollment not found.");
@@ -67,7 +65,7 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
             FromStatus = r.Status,
             ToStatus = r.Status,
             ActorUserId = actorUserId,
-            Note = $"Scores set: class {classScore}, exam {examScore}"
+            Note = $"Scores set: class {classScore?.ToString() ?? "—"}, exam {examScore?.ToString() ?? "—"}"
         });
         r.ClassScore = classScore; r.ExamScore = examScore; r.Total = total; r.Grade = grade;
         await db.SaveChangesAsync();
@@ -82,6 +80,8 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
         var expected = await ActiveEnrollments(classYearId).CountAsync();
         var rs = await db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && r.SubjectId == subjectId && r.AssessmentId == assessmentId).ToListAsync();
         if (rs.Count < expected) throw new DomainException($"Scores are missing for {expected - rs.Count} student(s).");
+        var incomplete = rs.Count(r => r.ClassScore == null || r.ExamScore == null);
+        if (incomplete > 0) throw new DomainException($"{incomplete} student(s) still need both a class score and an exam score before you can submit.");
         var open = rs.Where(r => r.Status is ResultStatus.Draft or ResultStatus.Returned).ToList();
         if (open.Count == 0) throw new DomainException("Nothing to submit.");
         await MoveAsync(open, ResultStatus.Submitted, actorUserId);
@@ -100,7 +100,6 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
     }
 
 
-
     /// <summary>Coordinator confirms the whole class (all subjects) and sends it to admin.</summary>
     public async Task ReviewAsync(int coordinatorTeacherId, int classYearId, int assessmentId, string actorUserId)
     {
@@ -109,7 +108,6 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
         await EnsureCompleteAsync(classYearId, rs, ResultStatus.Submitted, "submitted by every subject teacher");
         await MoveAsync(rs, ResultStatus.Reviewed, actorUserId);
     }
-
     // ---------- Admin ----------
     public async Task ApproveAsync(int classYearId, int assessmentId, string adminUserId)
     {
@@ -139,7 +137,7 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
              r.Assessment.Semester.Number, r.Assessment.Type, r.Subject.Name,
              db.TeachingAssignments.Where(t => t.SubjectId == r.SubjectId && t.ClassYearId == r.Enrollment.ClassYearId)
                  .Select(t => t.Teacher.User.FullName).FirstOrDefault(),
-             r.ClassScore, r.ExamScore, r.Total, r.Grade)).ToListAsync();
+             r.ClassScore ?? 0, r.ExamScore ?? 0, r.Total ?? 0, r.Grade)).ToListAsync();
 
 
 
@@ -156,6 +154,7 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
             throw new DomainException("You are not the coordinator of this class.");
     }
 
+
     private async Task EnsureCompleteAsync(int classYearId, List<Result> rs, ResultStatus required, string what)
     {
         var students = await ActiveEnrollments(classYearId).CountAsync();
@@ -164,6 +163,7 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
         if (rs.Count != students * classSubjects || rs.Any(r => r.Status != required))
             throw new DomainException($"Every subject's results must be {what} first.");
     }
+
 
 
 

@@ -32,7 +32,7 @@
                         <tr>
                             <td><b>@r.Subject</b></td>
                             <td>@r.ClassName</td>
-                            <td><div class="progress" style="width:130px"><span style="width:@Ui.Pct(r.Entered, r.Students)%"></span></div><div class="muted small">@r.Entered of @r.Students entered</div></td>
+                            <td><div class="progress" style="width:130px"><span style="width:@Ui.Pct(r.Entered, r.Students)%"></span></div><div class="muted small">@r.Entered of @r.Students entered@(r.Incomplete > 0 ? " · " + r.Incomplete + " incomplete" : "")</div></td>
                             <td>@if (r.HasReturned) {
                                 <span class="badge bad">Returned for correction</span>
                             } else if (r.Submitted)

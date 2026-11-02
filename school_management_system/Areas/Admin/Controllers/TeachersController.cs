@@ -13,7 +13,7 @@ namespace school_management_system.Areas.Admin.Controllers;
 
 public record TeacherRow(int Id, string StaffId, string Name, string Email, string? Phone, bool IsActive, int Classes, bool IsHallMaster, string? PhotoPath);
 
-public class TeachersController(AppDbContext db, TeacherService teachers, AccountAdminService accounts, UserManager<ApplicationUser> users, FileStorageService files) : AdminBase(db)
+public class TeachersController(AppDbContext db, TeacherService teachers, AccountAdminService accounts, UserManager<ApplicationUser> users, FileStorageService files, CredentialMailer mailer) : AdminBase(db)
 {
     public async Task<IActionResult> Index()
     {
@@ -38,9 +38,11 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
             creds = await teachers.CreateAsync(new CreateTeacherRequest(vm.FullName, vm.StaffId, profile, new(), vm.CoordinatorClassYearId));
         });
         if (!ok) { foreach (var p in saved) files.Delete(p); return View("Form", await Load(vm)); }
+        ViewData["Mail"] = await mailer.SendAccountAsync(vm.ContactEmail, creds!, "teacher");
         ViewData["Back"] = Url.Action(nameof(Index));
         return View("Credentials", creds);
     }
+
 
     public async Task<IActionResult> Details(int id)
     {
@@ -57,12 +59,14 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
         return View(t);
     }
 
+
     public async Task<IActionResult> Edit(int id)
     {
         var t = await Db.Teachers.Include(x => x.User).SingleOrDefaultAsync(x => x.Id == id);
         if (t == null) return NotFound();
         return View("Form", await Load(ToVm(t)));
     }
+
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(TeacherVm vm)
@@ -110,7 +114,6 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
         return ok ? RedirectToAction(nameof(Details), new { id }) : RedirectToAction(nameof(Assign), new { id, subjectId });
     }
 
-
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Unassign(int id, int teacherId)
     {
@@ -125,8 +128,10 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
         if (t == null) return NotFound();
         string? pw = null;
         if (!await Run(async () => pw = await accounts.ResetPasswordAsync(t.User))) return RedirectToAction(nameof(Details), new { id });
+        var creds = new AccountCredentials(t.User.FullName, t.User.Email!, pw!, t.StaffId);
+        ViewData["Mail"] = await mailer.SendAccountAsync(t.ContactEmail, creds, "teacher", isReset: true);
         ViewData["Back"] = Url.Action(nameof(Details), new { id });
-        return View("Credentials", new AccountCredentials(t.User.FullName, t.User.Email!, pw!, t.StaffId));
+        return View("Credentials", creds);
     }
 
     public async Task<IActionResult> Delete(int id)
@@ -151,6 +156,8 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
         return RedirectToAction(nameof(Index));
     }
 
+
+
     // ---------- helpers ----------
     private async Task<TeacherProfile> BuildProfileAsync(TeacherVm vm, List<string> saved)
     {
@@ -174,6 +181,7 @@ public class TeachersController(AppDbContext db, TeacherService teachers, Accoun
             PhotoPath = photo
         };
     }
+
 
 
 

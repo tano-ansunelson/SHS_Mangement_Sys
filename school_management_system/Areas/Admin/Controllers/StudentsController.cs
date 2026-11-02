@@ -11,7 +11,7 @@ namespace school_management_system.Areas.Admin.Controllers;
 
 public record StudentRow(int Id, string Number, string Name, string? Class, string Course, ResidenceType Residence, string? Hall, string? Room, StudentStatus Status, string? PhotoPath);
 
-public class StudentsController(AppDbContext db, StudentService students, AccountAdminService accounts, ResultWorkflowService results, FileStorageService files) : AdminBase(db)
+public class StudentsController(AppDbContext db, StudentService students, AccountAdminService accounts, ResultWorkflowService results, FileStorageService files, CredentialMailer mailer) : AdminBase(db)
 {
     private const int PageSize = 25;
 
@@ -59,6 +59,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
                 vm.Residence == ResidenceType.Boarding ? vm.HallId : null, profile));
         });
         if (!ok) { foreach (var p in saved) files.Delete(p); return View("Form", await Load(vm)); }
+        ViewData["Mail"] = await mailer.SendAccountAsync(vm.ContactEmail, creds!, "student");
         ViewData["Back"] = Url.Action(nameof(Index));
         return View("Credentials", creds);
     }
@@ -160,8 +161,10 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
         if (s == null) return NotFound();
         string? pw = null;
         if (!await Run(async () => pw = await accounts.ResetPasswordAsync(s.User))) return RedirectToAction(nameof(Details), new { id });
+        var creds = new AccountCredentials(s.User.FullName, s.User.Email!, pw!, s.StudentNumber);
+        ViewData["Mail"] = await mailer.SendAccountAsync(s.ContactEmail, creds, "student", isReset: true);
         ViewData["Back"] = Url.Action(nameof(Details), new { id });
-        return View("Credentials", new AccountCredentials(s.User.FullName, s.User.Email!, pw!, s.StudentNumber));
+        return View("Credentials", creds);
     }
 
     public async Task<IActionResult> Delete(int id)
@@ -169,6 +172,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
         var s = await Db.Students.Include(x => x.User).SingleOrDefaultAsync(x => x.Id == id);
         return s == null ? NotFound() : Confirm("Withdraw student", $"Withdraw {s.User.FullName}? Their login is disabled but all records are kept.", Url.Action(nameof(DeleteConfirmed))!, id, Url.Action(nameof(Details), new { id })!, "Withdraw");
     }
+
 
 
     [HttpPost, ValidateAntiForgeryToken]
@@ -221,6 +225,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
 
 
 
+
     private static void CopyPaths(StudentVm vm, Models.Student s) { vm.PhotoPath = s.PhotoPath; vm.FatherPhotoPath = s.FatherPhotoPath; vm.MotherPhotoPath = s.MotherPhotoPath; }
 
     private async Task<List<ClassOptionRow>> ClassOptions(int? yearId) =>
@@ -239,7 +244,6 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
         ViewBag.Halls = new SelectList(await Db.Halls.OrderBy(h => h.Name).ToListAsync(), "Id", "Name", vm.HallId);
         return vm;
     }
-
 
 
 }

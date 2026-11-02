@@ -30,6 +30,7 @@ builder.Services.ConfigureApplicationCookie(o =>
 
 builder.Services.Configure<GradingOptions>(builder.Configuration.GetSection("Grading"));
 builder.Services.Configure<SchoolOptions>(builder.Configuration.GetSection("School"));
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
 
 
 builder.Services.AddScoped<CredentialService>();
@@ -44,6 +45,8 @@ builder.Services.AddScoped<PromotionService>();
 builder.Services.AddScoped<DashboardQueries>();
 builder.Services.AddScoped<MatrixService>();
 builder.Services.AddScoped<FileStorageService>();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<CredentialMailer>();
 builder.Services.AddScoped<AccountAdminService>();
 
 

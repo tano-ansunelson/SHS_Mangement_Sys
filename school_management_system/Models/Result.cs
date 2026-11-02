@@ -11,9 +11,9 @@ namespace school_management_system.Models;
     public Subject Subject { get; set; } = null!;
     public int AssessmentId { get; set; }
     public Assessment Assessment { get; set; } = null!;
-    public decimal ClassScore { get; set; }
-    public decimal ExamScore { get; set; }
-    public decimal Total { get; set; }
+    public decimal? ClassScore { get; set; }
+    public decimal? ExamScore { get; set; }
+    public decimal? Total { get; set; }
     public string Grade { get; set; } = "";
     public ResultStatus Status { get; set; } = ResultStatus.Draft;
     public string? ReviewNote { get; set; }

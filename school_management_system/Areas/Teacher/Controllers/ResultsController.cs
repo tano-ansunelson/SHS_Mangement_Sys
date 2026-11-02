@@ -9,7 +9,7 @@ using school_management_system.Service;
 
 namespace school_management_system.Areas.Teacher.Controllers;
 
-public record EntryProgress(int ClassYearId, int SubjectId, string Subject, string ClassName, int Students, Dictionary<ResultStatus, int> Counts)
+public record EntryProgress(int ClassYearId, int SubjectId, string Subject, string ClassName, int Students, Dictionary<ResultStatus, int> Counts, int Incomplete = 0)
 {
     public int Entered => Counts.Values.Sum();
     public bool Submitted => Entered > 0 && Counts.Keys.All(k => k != ResultStatus.Draft && k != ResultStatus.Returned);
@@ -41,12 +41,17 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
                 }).ToListAsync();
             var stats = await Db.Results.Where(r => r.AssessmentId == assessmentId && Db.TeachingAssignments.Any(t => t.TeacherId == TeacherId && t.ClassYearId == r.Enrollment.ClassYearId && t.SubjectId == r.SubjectId))
                 .GroupBy(r => new { r.Enrollment.ClassYearId, r.SubjectId, r.Status }).Select(g => new { g.Key.ClassYearId, g.Key.SubjectId, g.Key.Status, N = g.Count() }).ToListAsync();
+            var partial = await Db.Results.Where(r => r.AssessmentId == assessmentId && (r.ClassScore == null || r.ExamScore == null)
+                    && Db.TeachingAssignments.Any(t => t.TeacherId == TeacherId && t.ClassYearId == r.Enrollment.ClassYearId && t.SubjectId == r.SubjectId))
+                .GroupBy(r => new { r.Enrollment.ClassYearId, r.SubjectId }).Select(g => new { g.Key.ClassYearId, g.Key.SubjectId, N = g.Count() }).ToListAsync();
             foreach (var m in mine)
                 rows.Add(new EntryProgress(m.ClassYearId, m.SubjectId, m.Subject, m.ClassName, m.Students,
-                    stats.Where(s => s.ClassYearId == m.ClassYearId && s.SubjectId == m.SubjectId).ToDictionary(s => s.Status, s => s.N)));
+                    stats.Where(s => s.ClassYearId == m.ClassYearId && s.SubjectId == m.SubjectId).ToDictionary(s => s.Status, s => s.N),
+                    partial.Where(p => p.ClassYearId == m.ClassYearId && p.SubjectId == m.SubjectId).Select(p => p.N).FirstOrDefault()));
         }
         return View(rows);
     }
+
 
     public async Task<IActionResult> Entry(int classYearId, int subjectId, int assessmentId)
     {
@@ -85,16 +90,24 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
 
 
 
+
+    /// <summary>Saves every row where at least one score was typed. A class score can be saved before the exam score
+    /// (and the other way round); the total and grade appear once both are in.</summary>
+    [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(EntryVm vm)
     {
         var errors = new List<string>(); var saved = 0;
         foreach (var r in vm.Rows.Where(r => r.ClassScore != null || r.ExamScore != null))
         {
-            if (r.ClassScore == null || r.ExamScore == null) { errors.Add("Enter both class and exam score for every student you fill in."); continue; }
-            try { await workflow.SaveDraftAsync(TeacherId, r.EnrollmentId, vm.SubjectId, vm.AssessmentId, r.ClassScore.Value, r.ExamScore.Value, UserId); saved++; }
+            try { await workflow.SaveDraftAsync(TeacherId, r.EnrollmentId, vm.SubjectId, vm.AssessmentId, r.ClassScore, r.ExamScore, UserId); saved++; }
             catch (DomainException e) { errors.Add(e.Message); }
         }
-        if (errors.Count > 0) Fail(string.Join(" ", errors.Distinct())); else Flash($"Saved {saved} score(s).");
+        if (errors.Count > 0) Fail(string.Join(" ", errors.Distinct()));
+        else
+        {
+            var onlyOne = vm.Rows.Count(r => (r.ClassScore != null) != (r.ExamScore != null));
+            Flash($"Saved {saved} score(s)." + (onlyOne > 0 ? $" {onlyOne} student(s) still have only one of the two scores; you can finish them later." : ""));
+        }
         return RedirectToAction(nameof(Entry), new { vm.ClassYearId, vm.SubjectId, vm.AssessmentId });
     }
 
@@ -104,7 +117,6 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
         await Run(() => workflow.SubmitAsync(TeacherId, classYearId, subjectId, assessmentId, UserId), "Results submitted to the class coordinator.");
         return RedirectToAction(nameof(Entry), new { classYearId, subjectId, assessmentId });
     }
-
 
 
 

@@ -11,13 +11,13 @@ namespace school_management_system.Service;
     :UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>(um,rm,o)
     {
 
-    protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user)
-    {
-        var id = await base.GenerateClaimsAsync(user);
-        id.AddClaim(new Claim("FullName", user.FullName));
+        protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user)
+        {
+            var id = await base.GenerateClaimsAsync(user);
+            id.AddClaim(new Claim("FullName", user.FullName));
 
-        return id;
-    }
+            return id;
+        }
     }
 
 
@@ -41,7 +41,7 @@ public class AccountAdminService(UserManager<ApplicationUser> users)
 
 
 public record SubjectRef(int Id, string Name);
-public record MatrixCell(decimal Total, string Grade, ResultStatus Status);
+public record MatrixCell(decimal? Total, string Grade, ResultStatus Status);
 
 public class MatrixRow
 {
@@ -49,10 +49,16 @@ public class MatrixRow
     public string Name { get; set; } = "";
     public string Number { get; set; } = "";
     public Dictionary<int, MatrixCell> Cells { get; set; } = new();
-    public decimal? Average => Cells.Count == 0 ? null : Math.Round(Cells.Values.Average(c => c.Total), 1);
+    public decimal? Average
+    {
+        get
+        {
+            var totals = Cells.Values.Where(c => c.Total != null).Select(c => c.Total!.Value).ToList();
+            return totals.Count == 0 ? null : Math.Round(totals.Average(), 1);
+        }
+    }
 }
-
-public class MatrixVm
+    public class MatrixVm
 {
     public int ClassYearId { get; set; }
     public int AssessmentId { get; set; }

@@ -11,31 +11,35 @@
         else
         {
             <table class="data">
-                <thead><tr><th>Student</th>@foreach (var s in Model.Subjects) {
-                    <th class="num">@s.Name</th>
-                }
-                <th class="num">Average</th></tr></thead>
-                <tbody>
-                    @foreach (var r in Model.Rows)
-                    {
-                        <tr>
-                            <td><b>@r.Name</b><div class="muted small">@r.Number</div></td>
-                            @foreach (var s in Model.Subjects)
-                            {
-                                if (r.Cells.TryGetValue(s.Id, out var c))
-                                {
-                                    <td class="num"><span class="badge @Ui.Status(c.Status)" title="@c.Status">@c.Total.ToString("0.#") · @c.Grade</span></td>
-                                }
-                                else
-                                {
-                                    <td class="num muted">—</td>
-                                }
-                            }
-                            <td class="num"><b>@(r.Average?.ToString("0.#") ?? "—")</b></td>
-                        </tr>
+                <thead>
+                    <tr>
+                        <th>Student</th>@foreach (var s in Model.Subjects) {
+                        <th class="num">@s.Name</th>
                     }
-                </tbody>
-            </table>
-        }
-    </div>
+                    <th class="num">Average</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td><b>@r.Name</b><div class="muted small">@r.Number</div></td>
+                        @foreach (var s in Model.Subjects)
+                        {
+                            if (r.Cells.TryGetValue(s.Id, out var c))
+                            {
+                                <td class="num"><span class="badge @Ui.Status(c.Status)" title="@c.Status">@(c.Total != null ? c.Total.Value.ToString("0.#") + " · " + c.Grade : "incomplete")</span></td>
+                            }
+                            else
+                            {
+                                <td class="num muted">—</td>
+                            }
+                        }
+                        <td class="num"><b>@(r.Average?.ToString("0.#") ?? "—")</b></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
 </div>
