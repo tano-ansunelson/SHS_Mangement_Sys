@@ -1,0 +1,26 @@
+﻿@model StudentDash
+<div class="page-head">
+    <div><h1>Hello, @Model.Name.Split(' ')[0]</h1><p>@Model.Number · @Model.Course@(Model.ClassName != null ? " · " + Model.ClassName : "")</p></div>
+    <div class="actions"><a class="btn" asp-controller="Results" asp-action="Index">View results</a></div>
+</div>
+<div class="stats">
+    <div class="stat"><div class="num">@Model.Subjects.Count</div><div class="label">Subjects this year</div></div>
+    <div class="stat"><div class="num">@Model.PublishedResults</div><div class="label">Published results</div></div>
+    <div class="stat"><div class="num" style="font-size:22px;padding-top:6px">@(Model.Coordinator ?? "—")</div><div class="label">Class coordinator</div></div>
+    <div class="stat"><div class="num" style="font-size:22px;padding-top:6px">@(Model.Boarding ? (Model.Hall ?? "—") : "Day student")</div><div class="label">@(Model.Boarding ? (Model.Room != null ? "Room " + Model.Room : "Room not assigned yet") : "Residence")</div></div>
+</div>
+<div class="tabs">@foreach (var h in Model.History) {
+    <a class="@(h.AcademicYearId == Model.YearId ? "active" : "")" asp-action="Index" asp-route-yearId="@h.AcademicYearId">Form @h.FormLevel · @h.Year</a>
+}
+</div>
+@if (!Model.Subjects.Any())
+{
+    <div class="card empty">No subjects to show for this year.</div>
+}
+<div class="grid g3">
+    @foreach (var s in Model.Subjects)
+    {
+        <div class="tile" style="cursor:default"><h3>@s.Subject</h3><div class="muted small">Taught by</div><div><b>@(s.Teacher ?? "To be assigned")</b></div></div>
+    }
+</div>
+<p class="muted small" style="margin-top:20px">Your subjects stay the same for all three years. Teachers and your class coordinator may change when you move up; earlier years stay here as a record.</p>
