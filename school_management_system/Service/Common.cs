@@ -30,10 +30,3 @@ public static class DbExtensions
 public record AccountCredentials(string FullName, string Email, string Password, string Number);
 
 
-
-
-
-public class Common
-    {
-    }
-

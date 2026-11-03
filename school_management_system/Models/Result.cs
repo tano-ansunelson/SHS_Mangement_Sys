@@ -11,10 +11,11 @@ namespace school_management_system.Models;
     public Subject Subject { get; set; } = null!;
     public int AssessmentId { get; set; }
     public Assessment Assessment { get; set; } = null!;
+    /// <summary>Midterm assessments store the student's score here (the "class score").</summary>
     public decimal? ClassScore { get; set; }
+    /// <summary>Final assessments store the student's score here (the "exam score").</summary>
     public decimal? ExamScore { get; set; }
-    public decimal? Total { get; set; }
-    public string Grade { get; set; } = "";
+    // The semester total (class + exam) and grade are worked out when needed, never stored.
     public ResultStatus Status { get; set; } = ResultStatus.Draft;
     public string? ReviewNote { get; set; }
     public byte[] RowVersion { get; set; } = null!;

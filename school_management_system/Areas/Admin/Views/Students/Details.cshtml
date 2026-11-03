@@ -3,7 +3,7 @@
 @model Student
 @{
     var history = (List<EnrollmentRow>)ViewData["History"]!;
-    var results = (List<StudentResultRow>)ViewData["Results"]!;
+    var results = (List<SemesterResultRow>)ViewData["Results"]!;
     string Show(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v;
 }
 <div class="page-head">
@@ -98,11 +98,21 @@
     else
     {
         <table class="data">
-            <thead><tr><th>Year</th><th>Form</th><th>Semester</th><th>Exam</th><th>Subject</th><th>Teacher</th><th class="num">Class</th><th class="num">Exam</th><th class="num">Total</th><th>Grade</th></tr></thead>
+            <thead><tr><th>Year</th><th>Form</th><th>Semester</th><th>Subject</th><th>Teacher</th><th class="num">Midterm</th><th class="num">Final exam</th><th class="num">Total</th><th>Grade</th></tr></thead>
             <tbody>
                 @foreach (var r in results)
                 {
-                    <tr><td>@r.AcademicYear</td><td>@r.FormLevel</td><td>@r.Semester</td><td>@r.Assessment</td><td>@r.Subject</td><td>@(r.Teacher ?? "—")</td><td class="num">@r.ClassScore.ToString("0.#")</td><td class="num">@r.ExamScore.ToString("0.#")</td><td class="num"><b>@r.Total.ToString("0.#")</b></td><td><span class="badge">@r.Grade</span></td></tr>
+                    <tr>
+                        <td>@r.AcademicYear</td>
+                        <td>@r.FormLevel</td>
+                        <td>@r.Semester</td>
+                        <td>@r.Subject</td>
+                        <td>@(r.Teacher ?? "—")</td>
+                        <td class="num">@(r.Midterm?.ToString("0.#") ?? "—")</td>
+                        <td class="num">@(r.Final?.ToString("0.#") ?? "—")</td>
+                        <td class="num"><b>@(r.Total?.ToString("0.#") ?? "—")</b></td>
+                        <td>@(r.Total != null ? r.Grade : "—")</td>
+                    </tr>
                 }
             </tbody>
         </table>

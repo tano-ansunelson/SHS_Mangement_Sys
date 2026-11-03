@@ -440,11 +440,11 @@ namespace school_management_system.Migrations
 
             modelBuilder.Entity("school_management_system.Models.HallMasterAssignment", b =>
                 {
-                    b.Property<int>("HallMasterAssignmentId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HallMasterAssignmentId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("AcademicYearId")
                         .HasColumnType("int");
@@ -455,7 +455,7 @@ namespace school_management_system.Migrations
                     b.Property<int>("TeacherId")
                         .HasColumnType("int");
 
-                    b.HasKey("HallMasterAssignmentId");
+                    b.HasKey("Id");
 
                     b.HasIndex("AcademicYearId");
 
@@ -568,10 +568,6 @@ namespace school_management_system.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
-                    b.Property<string>("Grade")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("ReviewNote")
                         .HasColumnType("nvarchar(max)");
 
@@ -586,10 +582,6 @@ namespace school_management_system.Migrations
 
                     b.Property<int>("SubjectId")
                         .HasColumnType("int");
-
-                    b.Property<decimal?>("Total")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
 
                     b.HasKey("Id");
 
@@ -728,6 +720,9 @@ namespace school_management_system.Migrations
 
                     b.Property<int>("AcademicYearId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("bit");
 
                     b.Property<int>("Number")
                         .HasColumnType("int");

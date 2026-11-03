@@ -8,10 +8,11 @@ using school_management_system.Service;
 
 namespace school_management_system.Areas.Admin.Controllers;
 
-
 public record AssessmentRow(int Id, string Title, AssessmentType Type, bool IsOpen, int Results);
-public record SemesterRow(int Id, int Number, List<AssessmentRow> Assessments);
+public record SemesterRow(int Id, int Number, bool IsCurrent, List<AssessmentRow> Assessments);
 public record YearRow(int Id, string Name, bool IsCurrent, List<SemesterRow> Semesters, int Classes, int Students);
+
+
 public class YearsController(AppDbContext db, AcademicSetupService setup) : AdminBase(db)
 {
     public async Task<IActionResult> Index()
@@ -22,7 +23,7 @@ public class YearsController(AppDbContext db, AcademicSetupService setup) : Admi
         var rows = new List<YearRow>();
         foreach (var y in years)
             rows.Add(new YearRow(y.Id, y.Name, y.IsCurrent,
-                sems.Where(s => s.AcademicYearId == y.Id).Select(s => new SemesterRow(s.Id, s.Number,
+                sems.Where(s => s.AcademicYearId == y.Id).Select(s => new SemesterRow(s.Id, s.Number, s.IsCurrent,
                     asms.Where(a => a.SemesterId == s.Id).OrderBy(a => a.Type).Select(a => new AssessmentRow(a.Id, a.Title, a.Type, a.IsOpen, a.Results)).ToList())).ToList(),
                 await Db.ClassYears.CountAsync(c => c.AcademicYearId == y.Id), await Db.Enrollments.CountAsync(e => e.AcademicYearId == y.Id)));
         return View(rows);
@@ -42,6 +43,13 @@ public class YearsController(AppDbContext db, AcademicSetupService setup) : Admi
     public async Task<IActionResult> SetCurrent(int id)
     {
         await Run(() => setup.SetCurrentYearAsync(id), "Current academic year changed.");
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> StartSemester(int id)
+    {
+        await Run(() => setup.StartSemesterAsync(id), "Semester started. Promotion is open only while the second semester is current.");
         return RedirectToAction(nameof(Index));
     }
 

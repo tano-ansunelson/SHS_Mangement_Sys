@@ -6,11 +6,11 @@ using school_management_system.Service;
 using Microsoft.EntityFrameworkCore;
 
 namespace school_management_system.Areas.Admin.Controllers;
+
 public record PromotionClassRow(int ClassYearId, string Name, int Students, int Promote, int Repeat, int Pending, bool Done);
 public record PromotionStudentRow(string Name, string Number, PromotionDecision Decision, decimal? Average);
 
-
-public class PromotionController(AppDbContext db, PromotionService promotion) : AdminBase(db)
+public class PromotionController(AppDbContext db, PromotionService promotion, MatrixService matrix) : AdminBase(db)
 {
     public async Task<IActionResult> Index(int? nextYearId)
     {
@@ -39,10 +39,12 @@ public class PromotionController(AppDbContext db, PromotionService promotion) : 
         ViewData["ClassName"] = ClassLabel(cy.SchoolClass);
         ViewData["ClassYearId"] = classYearId; ViewData["NextYearId"] = nextYearId; ViewData["Form"] = cy.SchoolClass.FormLevel;
         ViewData["NextYear"] = await Db.AcademicYears.Where(a => a.Id == nextYearId).Select(a => a.Name).FirstOrDefaultAsync();
-        var rows = await Db.PromotionRecommendations.Where(p => p.Enrollment.ClassYearId == classYearId && p.SubmittedToAdmin && p.AdminDecision == AdminDecision.Pending)
+        var recs = await Db.PromotionRecommendations.Where(p => p.Enrollment.ClassYearId == classYearId && p.SubmittedToAdmin && p.AdminDecision == AdminDecision.Pending)
             .OrderBy(p => p.Enrollment.Student.User.FullName)
-            .Select(p => new PromotionStudentRow(p.Enrollment.Student.User.FullName, p.Enrollment.Student.StudentNumber, p.Decision,
-                Db.Results.Where(r => r.EnrollmentId == p.EnrollmentId).Average(r => (decimal?)r.Total))).ToListAsync();
+            .Select(p => new { p.EnrollmentId, Name = p.Enrollment.Student.User.FullName, Number = p.Enrollment.Student.StudentNumber, p.Decision }).ToListAsync();
+        var averages = await matrix.AveragesAsync(recs.Select(r => r.EnrollmentId));
+        var rows = recs.Select(r => new PromotionStudentRow(r.Name, r.Number, r.Decision, averages.GetValueOrDefault(r.EnrollmentId))).ToList();
+        ViewData["Open"] = await promotion.IsPromotionOpenAsync(classYearId);
         return View(rows);
     }
 

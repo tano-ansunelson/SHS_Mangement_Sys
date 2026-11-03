@@ -4,12 +4,17 @@
 @{
     var cyId = (int)ViewData["ClassYearId"]!; var form = (int)ViewData["Form"]!;
     var submitted = ViewData["Submitted"] is true; var approved = ViewData["Approved"] is true; var note = ViewData["Note"] as string;
-    var locked = submitted || approved;
+    var open = ViewData["Open"] is true;
+    var locked = submitted || approved || !open;
 }
 <div class="page-head">
     <div><h1>Promotion · @ViewData["ClassName"]</h1><p>@(form == 3 ? "Form 3 students you promote will graduate after WASSCE." : "Decide who moves up to Form " + (form + 1) + " and who repeats.")</p></div>
     <div class="actions"><a class="btn" asp-action="Class" asp-route-classYearId="@cyId">Back to class</a></div>
 </div>
+@if (!open)
+{
+    <div class="alert info">Promotion opens in the <b>second semester</b>. You can come back to this list when the admin has started it.</div>
+}
 @if (!string.IsNullOrEmpty(note))
 {
     <div class="alert error"><b>Sent back by admin:</b> @note</div>

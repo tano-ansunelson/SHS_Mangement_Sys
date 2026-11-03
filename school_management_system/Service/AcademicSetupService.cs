@@ -19,7 +19,7 @@ public class AcademicSetupService(AppDbContext db)
 
         var year = new AcademicYear { Name = name, IsCurrent = makeCurrent };
         db.AcademicYears.Add(year);
-        db.Semesters.Add(new Semester { AcademicYear = year, Number = 1 });
+        db.Semesters.Add(new Semester { AcademicYear = year, Number = 1, IsCurrent = true });
         db.Semesters.Add(new Semester { AcademicYear = year, Number = 2 });
         foreach (var classId in await db.SchoolClasses.Select(c => c.Id).ToListAsync())
             db.ClassYears.Add(new ClassYear { SchoolClassId = classId, AcademicYear = year });
@@ -35,6 +35,18 @@ public class AcademicSetupService(AppDbContext db)
         await db.AcademicYears.Where(y => y.IsCurrent).ExecuteUpdateAsync(s => s.SetProperty(y => y.IsCurrent, false));
         var n = await db.AcademicYears.Where(y => y.Id == yearId).ExecuteUpdateAsync(s => s.SetProperty(y => y.IsCurrent, true));
         if (n == 0) throw new DomainException("Academic year not found.");
+        await tx.CommitAsync();
+    }
+
+    /// <summary>Moves the school into a semester of an academic year. Promotion opens when semester 2 is current.</summary>
+    public async Task StartSemesterAsync(int semesterId)
+    {
+        var yearId = await db.Semesters.Where(s => s.Id == semesterId).Select(s => (int?)s.AcademicYearId).FirstOrDefaultAsync()
+                     ?? throw new DomainException("Semester not found.");
+        await using var tx = await db.Database.BeginTransactionAsync();
+        await db.Semesters.Where(s => s.AcademicYearId == yearId && s.Id != semesterId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.IsCurrent, false));
+        await db.Semesters.Where(s => s.Id == semesterId).ExecuteUpdateAsync(s => s.SetProperty(x => x.IsCurrent, true));
         await tx.CommitAsync();
     }
     public async Task SetCourseSubjectsAsync(int courseId, IEnumerable<int> subjectIds)
@@ -53,7 +65,7 @@ public class AcademicSetupService(AppDbContext db)
         if (formLevel is < 1 or > 3) throw new DomainException("Form level must be 1, 2 or 3.");
         group = group.Trim().ToUpperInvariant();
         if (await db.SchoolClasses.AnyAsync(c => c.CourseId == courseId && c.FormLevel == formLevel && c.Group == group))
-            throw new DomainException("That cl  ass already exists.");
+            throw new DomainException("That class already exists.");
 
         var ids = (subjectIds ?? await db.CourseSubjects.Where(x => x.CourseId == courseId).Select(x => x.SubjectId).ToListAsync())
             .Distinct().ToList();
@@ -72,6 +84,7 @@ public class AcademicSetupService(AppDbContext db)
     }
 
 
+    /// <summary>Replaces a class's subject list. Refuses to remove a subject that already has results.</summary>
     /// <summary>Replaces a class's subject list. Refuses to remove a subject that already has results.</summary>
     public async Task SetClassSubjectsAsync(int classId, IEnumerable<int> subjectIds)
     {
@@ -96,11 +109,6 @@ public class AcademicSetupService(AppDbContext db)
         await db.SaveChangesAsync();
         return a;
     }
-
-
-
-      
-
 
 
 }

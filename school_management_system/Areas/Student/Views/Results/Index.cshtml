@@ -1,5 +1,5 @@
-﻿@model List<StudentResultRow>
-<div class="page-head"><div><h1>My results</h1><p>Only results released by the school appear here.</p></div><div class="actions"><button class="btn" onclick="window.print()">Print</button></div></div>
+﻿@model List<SemesterResultRow>
+<div class="page-head"><div><h1>My results</h1><p>Only results released by the school appear here. The semester total is your midterm score plus your final exam score.</p></div><div class="actions"><button class="btn" onclick="window.print()">Print</button></div></div>
 @if (!Model.Any())
 {
     <div class="card empty">No results have been published yet.</div>
@@ -8,23 +8,41 @@
 {
     <div class="card">
         <div class="card-head"><h2>Form @year.Key.FormLevel · @year.Key.AcademicYear</h2></div>
-        @foreach (var exam in year.GroupBy(r => new { r.Semester, r.Assessment }))
+        @foreach (var sem in year.GroupBy(r => r.Semester))
         {
+            var totals = sem.Where(x => x.Total != null).Select(x => x.Total!.Value).ToList();
             <div class="card-body flush table-wrap">
                 <div style="padding:14px 20px 4px">
-                    <b>Semester @exam.Key.Semester · @exam.Key.Assessment</b>
-                    <span class="muted small"> · average @exam.Average(x => x.Total).ToString("0.#")</span>
+                    <b>Semester @sem.Key</b>
+                    @if (totals.Any())
+                    {
+                        <span class="muted small"> · average total @totals.Average().ToString("0.#")</span>
+                    }
                 </div>
                 <table class="data">
-                    <thead><tr><th>Subject</th><th>Teacher</th><th class="num">Class score</th><th class="num">Exam score</th><th class="num">Total</th><th>Grade</th></tr></thead>
+                    <thead><tr><th>Subject</th><th>Teacher</th><th class="num">Midterm score</th><th class="num">Final exam score</th><th class="num">Total</th><th>Grade</th></tr></thead>
                     <tbody>
-                        @foreach (var r in exam)
+                        @foreach (var r in sem)
                         {
-                            <tr><td><b>@r.Subject</b></td><td>@(r.Teacher ?? "—")</td><td class="num">@r.ClassScore.ToString("0.#")</td><td class="num">@r.ExamScore.ToString("0.#")</td><td class="num"><b>@r.Total.ToString("0.#")</b></td><td><span class="badge info">@r.Grade</span></td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </div>
+                            <tr>
+                                <td><b>@r.Subject</b></td>
+                                <td>@(r.Teacher ?? "—")</td>
+                                <td class="num">@(r.Midterm?.ToString("0.#") ?? "—")</td>
+                                <td class="num">@(r.Final?.ToString("0.#") ?? "—")</td>
+                                <td class="num"><b>@(r.Total?.ToString("0.#") ?? "—")</b></td>
+                                <td>@if (r.Total != null) {
+                                    <span class="badge info">@r.Grade</span>
+                                } else
+                                {
+
+                                    <span class="muted small">awaiting final</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
 }
