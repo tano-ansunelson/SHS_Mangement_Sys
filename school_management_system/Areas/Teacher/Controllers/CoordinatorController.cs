@@ -61,22 +61,30 @@ public class CoordinatorController(AppDbContext db, DashboardQueries q, ResultWo
         return RedirectToAction(nameof(Class), new { classYearId, assessmentId });
     }
 
+
     public async Task<IActionResult> Promotion(int classYearId)
     {
         if (!await IsCoordinatorAsync(classYearId)) return Forbid();
         var cy = await Db.ClassYears.Include(c => c.SchoolClass).ThenInclude(s => s.Course).SingleAsync(c => c.Id == classYearId);
         ViewData["Title"] = "Promotion · " + ClassLabel(cy.SchoolClass);
         ViewData["ClassYearId"] = classYearId; ViewData["ClassName"] = ClassLabel(cy.SchoolClass); ViewData["Form"] = cy.SchoolClass.FormLevel;
-        var rows = await Db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome == EnrollmentOutcome.Pending && e.Student.Status == StudentStatus.Active)
+        var students = await Db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome == EnrollmentOutcome.Pending && e.Student.Status == StudentStatus.Active)
             .OrderBy(e => e.Student.User.FullName)
-            .Select(e => new PromotionRow(e.Id, e.Student.User.FullName, e.Student.StudentNumber,
-                Db.Results.Where(r => r.EnrollmentId == e.Id).Average(r => (decimal?)r.Total),
-                Db.PromotionRecommendations.Where(p => p.EnrollmentId == e.Id).Select(p => (PromotionDecision?)p.Decision).FirstOrDefault())).ToListAsync();
+            .Select(e => new {
+                e.Id,
+                Name = e.Student.User.FullName,
+                Number = e.Student.StudentNumber,
+                Decision = Db.PromotionRecommendations.Where(p => p.EnrollmentId == e.Id).Select(p => (PromotionDecision?)p.Decision).FirstOrDefault()
+            }).ToListAsync();
+        var averages = await matrix.AveragesAsync(students.Select(s => s.Id));
+        var rows = students.Select(s => new PromotionRow(s.Id, s.Name, s.Number, averages.GetValueOrDefault(s.Id), s.Decision)).ToList();
+        ViewData["Open"] = await promotion.IsPromotionOpenAsync(classYearId);
         ViewData["Submitted"] = await Db.PromotionRecommendations.AnyAsync(p => p.Enrollment.ClassYearId == classYearId && p.SubmittedToAdmin);
         ViewData["Approved"] = await Db.PromotionRecommendations.AnyAsync(p => p.Enrollment.ClassYearId == classYearId && p.AdminDecision == AdminDecision.Approved);
         ViewData["Note"] = await Db.PromotionRecommendations.Where(p => p.Enrollment.ClassYearId == classYearId && p.AdminDecision == AdminDecision.Rejected).Select(p => p.AdminNote).FirstOrDefaultAsync();
         return View(rows);
     }
+
 
 
     [HttpPost, ValidateAntiForgeryToken]
@@ -86,9 +94,6 @@ public class CoordinatorController(AppDbContext db, DashboardQueries q, ResultWo
         if (ok && submit) await Run(() => promotion.SubmitToAdminAsync(TeacherId, classYearId), "Promotion list sent to the admin.");
         return RedirectToAction(nameof(Promotion), new { classYearId });
     }
-
-
-
 
 }
 

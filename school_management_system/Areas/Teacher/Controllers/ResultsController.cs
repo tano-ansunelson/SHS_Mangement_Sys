@@ -15,14 +15,14 @@ public record EntryProgress(int ClassYearId, int SubjectId, string Subject, stri
     public bool Submitted => Entered > 0 && Counts.Keys.All(k => k != ResultStatus.Draft && k != ResultStatus.Returned);
     public bool HasReturned => Counts.ContainsKey(ResultStatus.Returned);
 }
-public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkflowService workflow, IOptions<GradingOptions> grading) : TeacherBase(db, q)
+public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkflowService workflow,  GradingService grading) : TeacherBase(db, q)
 {
     public async Task<IActionResult> Index(int? assessmentId)
     {
         ViewData["Title"] = "Enter results";
         var y = await CurrentYearIdAsync();
         var list = await Db.Assessments.Where(a => a.Semester.AcademicYearId == y).OrderBy(a => a.Semester.Number).ThenBy(a => a.Type)
-            .Select(a => new { a.Id, Name = "Semester " + a.Semester.Number + " · " + a.Title + (a.IsOpen ? "" : " (closed)") }).ToListAsync();
+            .Select(a => new { a.Id, Name = "Semester " + a.Semester.Number + " · " + a.Title + (a.Type == AssessmentType.Midterm ? " (midterm score)" : " (final exam score)") + (a.IsOpen ? "" : " · closed") }).ToListAsync();
         assessmentId ??= list.Select(a => (int?)a.Id).FirstOrDefault();
         ViewBag.Assessments = new SelectList(list, "Id", "Name", assessmentId);
         ViewData["AssessmentId"] = assessmentId;
@@ -48,6 +48,9 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
         return View(rows);
     }
 
+
+    /// <summary>A midterm page has one score box (midterm score); a final page has one box (final exam score)
+    /// and shows each student's midterm score beside it so the total is visible.</summary>
     public async Task<IActionResult> Entry(int classYearId, int subjectId, int assessmentId)
     {
         if (!await TeacherAsync(classYearId, subjectId)) return Forbid();
@@ -55,25 +58,41 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
         var cy = await Db.ClassYears.Include(c => c.SchoolClass).ThenInclude(s => s.Course).SingleAsync(c => c.Id == classYearId);
         if (asm == null) return NotFound();
         if (cy.SchoolClass.FormLevel == 3 && asm.Semester.Number == 2) { Fail("Form 3 has no second-semester examinations (WASSCE)."); return RedirectToAction(nameof(Index)); }
+        var isFinal = asm.Type == AssessmentType.Final;
 
         var students = await Db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome == EnrollmentOutcome.Pending && e.Student.Status == StudentStatus.Active)
             .OrderBy(e => e.Student.User.FullName).Select(e => new { e.Id, Name = e.Student.User.FullName, Number = e.Student.StudentNumber }).ToListAsync();
         var existing = await Db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && r.SubjectId == subjectId && r.AssessmentId == assessmentId).ToListAsync();
+        var midterms = isFinal
+            ? await Db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && r.SubjectId == subjectId && r.Assessment.SemesterId == asm.SemesterId && r.Assessment.Type == AssessmentType.Midterm)
+                .Select(r => new { r.EnrollmentId, r.ClassScore }).ToListAsync()
+            : null;
+
         var vm = new EntryVm
         {
             ClassYearId = classYearId,
             SubjectId = subjectId,
             AssessmentId = assessmentId,
+            Type = asm.Type,
             ClassName = $"Form {cy.SchoolClass.FormLevel} {cy.SchoolClass.Course.Name} {cy.SchoolClass.Group}",
             SubjectName = (await Db.Subjects.FindAsync(subjectId))!.Name,
             AssessmentTitle = $"Semester {asm.Semester.Number} · {asm.Title}",
-            MaxClass = grading.Value.MaxClassScore,
-            MaxExam = grading.Value.MaxExamScore
+            ScoreLabel = isFinal ? "Final exam score" : "Midterm score",
+            Max = grading.MaxFor(asm.Type),
+            MidtermMax = grading.MaxFor(AssessmentType.Midterm)
         };
         foreach (var s in students)
         {
             var r = existing.FirstOrDefault(x => x.EnrollmentId == s.Id);
-            vm.Rows.Add(new EntryRow { EnrollmentId = s.Id, Name = s.Name, Number = s.Number, ClassScore = r?.ClassScore, ExamScore = r?.ExamScore, Status = r?.Status });
+            vm.Rows.Add(new EntryRow
+            {
+                EnrollmentId = s.Id,
+                Name = s.Name,
+                Number = s.Number,
+                Status = r?.Status,
+                Score = r == null ? null : (isFinal ? r.ExamScore : r.ClassScore),
+                Midterm = midterms?.FirstOrDefault(m => m.EnrollmentId == s.Id)?.ClassScore
+            });
         }
         vm.Locked = !asm.IsOpen || (existing.Count > 0 && existing.All(r => r.Status is not (ResultStatus.Draft or ResultStatus.Returned)));
         ViewData["Title"] = $"{vm.SubjectName} · {vm.ClassName}";
@@ -85,16 +104,20 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
 
 
 
+
+    /// <summary>Saves every row where at least one score was typed. A class score can be saved before the exam score
+    /// (and the other way round); the total and grade appear once both are in.</summary>
+    [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(EntryVm vm)
     {
         var errors = new List<string>(); var saved = 0;
-        foreach (var r in vm.Rows.Where(r => r.ClassScore != null || r.ExamScore != null))
+        foreach (var r in vm.Rows.Where(r => r.Score != null))
         {
-            if (r.ClassScore == null || r.ExamScore == null) { errors.Add("Enter both class and exam score for every student you fill in."); continue; }
-            try { await workflow.SaveDraftAsync(TeacherId, r.EnrollmentId, vm.SubjectId, vm.AssessmentId, r.ClassScore.Value, r.ExamScore.Value, UserId); saved++; }
+            try { await workflow.SaveDraftAsync(TeacherId, r.EnrollmentId, vm.SubjectId, vm.AssessmentId, r.Score, UserId); saved++; }
             catch (DomainException e) { errors.Add(e.Message); }
         }
-        if (errors.Count > 0) Fail(string.Join(" ", errors.Distinct())); else Flash($"Saved {saved} score(s).");
+        if (errors.Count > 0) Fail(string.Join(" ", errors.Distinct()));
+        else Flash($"Saved {saved} score(s).");
         return RedirectToAction(nameof(Entry), new { vm.ClassYearId, vm.SubjectId, vm.AssessmentId });
     }
 
@@ -104,7 +127,6 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
         await Run(() => workflow.SubmitAsync(TeacherId, classYearId, subjectId, assessmentId, UserId), "Results submitted to the class coordinator.");
         return RedirectToAction(nameof(Entry), new { classYearId, subjectId, assessmentId });
     }
-
 
 
 

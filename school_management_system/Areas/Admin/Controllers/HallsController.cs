@@ -11,7 +11,7 @@ public record HallRow(int Id, string Name, Gender? Gender, int Rooms, int Beds, 
 public record RoomRow(int Id, string Number, int Capacity, int Occupied);
 public record HallStudent(int StudentId, string Name, string Number, string? Room);
 
-public class HallsController(AppDbContext db, HallService halls, RoomAllocationService rooms) : AdminBase(db)
+public class HallsController(AppDbContext db, HallService halls, RoomAllocationService rooms, AccountAdminService account, CredentialMailer mailer) : AdminBase(db)
 {
 
     public async Task<IActionResult> Index()
@@ -65,7 +65,7 @@ public class HallsController(AppDbContext db, HallService halls, RoomAllocationS
         var y = await CurrentYearIdAsync();
         ViewData["Title"] = h.Name;
         ViewData["Master"] = await Db.HallMasterAssignments.Where(m => m.HallId == id && m.AcademicYearId == y).Select(m => m.Teacher.User.FullName).FirstOrDefaultAsync();
-        ViewData["Rooms"] = await Db.Rooms.Where(r => r.HallId == id).OrderBy(r => r.Number)
+        ViewData["Rooms"] = await Db.Rooms.Where(r => r.HallId == id).OrderByDescending(r => r.Number)
             .Select(r => new RoomRow(r.Id, r.Number, r.Capacity, Db.RoomAllocations.Count(a => a.RoomId == r.Id && a.AcademicYearId == y))).ToListAsync();
         ViewData["Students"] = await Db.HallRegistrations.Where(r => r.HallId == id && r.AcademicYearId == y).OrderBy(r => r.Student.User.FullName)
             .Select(r => new HallStudent(r.StudentId, r.Student.User.FullName, r.Student.StudentNumber,
@@ -131,12 +131,29 @@ public class HallsController(AppDbContext db, HallService halls, RoomAllocationS
     }
 
 
-
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> AssignMaster(int id, int teacherId)
+    public async Task<IActionResult> AssignMaster(int id, int teacherId, bool newPassword)
     {
-        var ok = await Run(() => halls.AssignHallMasterAsync(teacherId, id), "Hall master assigned. They will see the Hall Master portal the next time they sign in.");
-        return ok ? RedirectToAction(nameof(Details), new { id }) : RedirectToAction(nameof(AssignMaster), new { id });
+        if (!await Run(() => halls.AssignHallMasterAsync(teacherId, id))) return RedirectToAction(nameof(AssignMaster), new { id });
+
+        var t = await Db.Teachers.Include(x => x.User).SingleAsync(x => x.Id == teacherId);
+        var hallName = await Db.Halls.Where(h => h.Id == id).Select(h => h.Name).SingleAsync();
+
+        // An existing password is only stored as a hash, so it cannot be emailed. A new temporary one can.
+        string? pw = null;
+        if (newPassword && !await Run(async () => pw = await account.ResetPasswordAsync(t.User)))
+            return RedirectToAction(nameof(Details), new { id });
+
+        var mail = await mailer.SendHallMasterAsync(t.ContactEmail, t.User.FullName, hallName, t.User.Email!, pw);
+        if (pw != null)
+        {
+            ViewData["Mail"] = mail;
+            ViewData["Back"] = Url.Action(nameof(Details), new { id });
+            return View("Credentials", new AccountCredentials(t.User.FullName, t.User.Email!, pw, t.StaffId));
+        }
+        Flash($"{t.User.FullName} is now hall master of {hallName}. " + (mail.Sent ? mail.Message : "They need to sign out and in again to see the Hall Master portal."));
+        if (!mail.Sent) Fail(mail.Message);
+        return RedirectToAction(nameof(Details), new { id });
     }
 
     public async Task<IActionResult> Delete(int id)

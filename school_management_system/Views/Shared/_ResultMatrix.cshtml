@@ -2,7 +2,7 @@
 @using school_management_system.Service
 @model MatrixVm
 <div class="card">
-    <div class="card-head"><h2>@Model.ClassName</h2><span class="muted">@Model.AssessmentTitle</span></div>
+    <div class="card-head"><h2>@Model.ClassName</h2><span class="muted">@Model.AssessmentTitle · @(Model.IsFinal ? "final exam score, with the semester total" : "midterm score")</span></div>
     <div class="card-body flush table-wrap">
         @if (Model.Rows.Count == 0)
         {
@@ -22,9 +22,15 @@
                             <td><b>@r.Name</b><div class="muted small">@r.Number</div></td>
                             @foreach (var s in Model.Subjects)
                             {
-                                if (r.Cells.TryGetValue(s.Id, out var c))
+                                if (r.Cells.TryGetValue(s.Id, out var c) && c.Score != null)
                                 {
-                                    <td class="num"><span class="badge @Ui.Status(c.Status)" title="@c.Status">@c.Total.ToString("0.#") · @c.Grade</span></td>
+                                    <td class="num">
+                                        <span class="badge @Ui.Status(c.Status)" title="@c.Status">@c.Score.Value.ToString("0.#")</span>
+                                        @if (c.Total != null)
+                                        {
+                                            <div class="muted small">Total @c.Total.Value.ToString("0.#") · @c.Grade</div>
+                                        }
+                                    </td>
                                 }
                                 else
                                 {

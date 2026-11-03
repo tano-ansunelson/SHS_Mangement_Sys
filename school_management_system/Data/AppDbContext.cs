@@ -69,12 +69,11 @@ namespace school_management_system.Data;
         b.Entity<CourseSubject>().HasKey(x => new { x.CourseId, x.SubjectId });
         b.Entity<ClassSubject>().HasKey(x => new { x.SchoolClassId, x.SubjectId });
         b.Entity<IdCounter>().HasKey(x => x.Key);
-
         b.Entity<Teacher>().HasIndex(x => x.StaffId).IsUnique();
         b.Entity<Teacher>().HasIndex(x => x.UserId).IsUnique();
         b.Entity<Student>().HasIndex(x => x.StudentNumber).IsUnique();
         b.Entity<Student>().HasIndex(x => x.UserId).IsUnique();
-        b.Entity<Student>().HasIndex(x => x.AdmissionNumber).IsUnique();
+        b.Entity<Student>().HasIndex(x => x.AdmissionNumber).IsUnique();   // nullable: only filled values must be unique
         b.Entity<Course>().HasIndex(x => x.Name).IsUnique();
         b.Entity<Subject>().HasIndex(x => x.Code).IsUnique();
         b.Entity<SchoolClass>().HasIndex(x => new { x.CourseId, x.FormLevel, x.Group }).IsUnique();
@@ -90,12 +89,12 @@ namespace school_management_system.Data;
         b.Entity<Assessment>().HasIndex(x => new { x.SemesterId, x.Type }).IsUnique();
         b.Entity<PromotionRecommendation>().HasIndex(x => x.EnrollmentId).IsUnique();
 
+
         b.Entity<Result>(e =>
         {
             e.HasIndex(x => new { x.EnrollmentId, x.SubjectId, x.AssessmentId }).IsUnique();
             e.Property(x => x.ClassScore).HasPrecision(5, 2);
             e.Property(x => x.ExamScore).HasPrecision(5, 2);
-            e.Property(x => x.Total).HasPrecision(5, 2);
             e.Property(x => x.RowVersion).IsRowVersion();
         });
         b.Entity<GradeBoundary>().Property(x => x.MinScore).HasPrecision(5, 2);

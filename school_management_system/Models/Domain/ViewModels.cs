@@ -204,18 +204,23 @@ public class YearVm
 
 public class AssessmentVm
 {
-    [Display(Name = "Semester")] public int SemesterId { get; set; }
+    [Display(Name = "Semester")]
+    public int SemesterId { get; set; }
     public AssessmentType Type { get; set; }
-    [StringLength(60)] public string? Title { get; set; }
+    [StringLength(60)]
+    public string? Title { get; set; }
 }
 
 
 public class GradeVm
 {
     public int Id { get; set; }
-    [Range(0, 100), Display(Name = "Minimum score")] public decimal MinScore { get; set; }
-    [Required, StringLength(5)] public string Grade { get; set; } = "";
-    [Required, StringLength(40)] public string Remark { get; set; } = "";
+    [Range(0, 100), Display(Name = "Minimum score")] 
+    public decimal MinScore { get; set; }
+    [Required, StringLength(5)]
+    public string Grade { get; set; } = "";
+    [Required, StringLength(40)]
+    public string Remark { get; set; } = "";
 }
 
 public class EntryRow
@@ -223,8 +228,8 @@ public class EntryRow
     public int EnrollmentId { get; set; }
     public string Name { get; set; } = "";
     public string Number { get; set; } = "";
-    public decimal? ClassScore { get; set; }
-    public decimal? ExamScore { get; set; }
+    public decimal? Score { get; set; }             // the one score this exam collects
+    public decimal? Midterm { get; set; }           // shown on final-exam pages, for the running total
     public ResultStatus? Status { get; set; }
 }
 
@@ -234,13 +239,15 @@ public class EntryVm
     public int ClassYearId { get; set; }
     public int SubjectId { get; set; }
     public int AssessmentId { get; set; }
+    public AssessmentType Type { get; set; }
     public string ClassName { get; set; } = "";
     public string SubjectName { get; set; } = "";
     public string AssessmentTitle { get; set; } = "";
-    public decimal MaxClass { get; set; }
-    public decimal MaxExam { get; set; }
+    public string ScoreLabel { get; set; } = "";
+    public decimal Max { get; set; }
+    public decimal MidtermMax { get; set; }
     public bool Locked { get; set; }
     public List<EntryRow> Rows { get; set; } = new();
 }
 
-public record SubjectTeacherRow(string Name, string Code, string? Teacher);
+    public record SubjectTeacherRow(string Name, string Code, string? Teacher);

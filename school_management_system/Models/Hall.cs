@@ -10,7 +10,7 @@ namespace school_management_system.Models;
 
 public class HallMasterAssignment
 {
-    public int HallMasterAssignmentId { get; set; }
+    public int Id { get; set; }
     public int TeacherId { get; set; }
     public Teacher Teacher { get; set; } = null!;
     public int HallId { get; set; }

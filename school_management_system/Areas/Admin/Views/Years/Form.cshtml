@@ -9,6 +9,7 @@
         <form method="post" class="form" asp-action="Create">
             <div class="field"><label asp-for="Name"></label><input asp-for="Name" placeholder="2025/2026" /><span asp-validation-for="Name"></span></div>
             <div class="field"><label class="check" style="width:max-content"><input type="checkbox" asp-for="MakeCurrent" /> Make this the current academic year</label></div>
+            <div class="hint" style="margin-bottom:16px">Creating next year to promote students into it? Untick "current" until promotion is approved: promotion is done from the old year, then you make the new year current.</div>
             <div class="form-actions"><button class="btn primary">Create</button><a class="btn" asp-action="Index">Cancel</a></div>
         </form>
     </div>

@@ -8,52 +8,46 @@ namespace school_management_system.Service;
 public class PromotionService(AppDbContext db)
 {
 
-    public async Task RecommendAsync(int coordinatorTeacherId, int classYearId,
-        IEnumerable<(int EnrollementId, PromotionDecision Decision)> decisions)
+    /// <summary>Promotion (and graduation) can only happen once the class's academic year is in its second semester.</summary>
+    public Task<bool> IsPromotionOpenAsync(int classYearId) =>
+        db.Semesters.AnyAsync(s => s.Number == 2 && s.IsCurrent && s.AcademicYearId == db.ClassYears.Where(c => c.Id == classYearId).Select(c => c.AcademicYearId).FirstOrDefault());
+
+    private async Task EnsurePromotionOpenAsync(int classYearId)
     {
+        if (!await IsPromotionOpenAsync(classYearId))
+            throw new DomainException("Promotion opens in the second semester. The admin starts it from Academic years.");
+    }
+
+    public async Task RecommendAsync(int coordinatorTeacherId, int classYearId,
+        IEnumerable<(int EnrollmentId, PromotionDecision Decision)> decisions)
+    {
+        await EnsurePromotionOpenAsync(classYearId);
         if (!await db.ClassYears.AnyAsync(c => c.Id == classYearId && c.CoordinatorTeacherId == coordinatorTeacherId))
             throw new DomainException("You are not the coordinator of this class.");
 
-        var enrollmentIds = await db.Enrollments
-            .Where(e => e.ClassYearId == classYearId)
-            .Select(e => e.Id)
-            .ToListAsync();
-
+        var enrollmentIds = await db.Enrollments.Where(e => e.ClassYearId == classYearId).Select(e => e.Id).ToListAsync();
         foreach (var (enrollmentId, decision) in decisions)
         {
-            if (!enrollmentIds.Contains(enrollmentId))
-                throw new DomainException("A student does not belong to this class.");
+            if (!enrollmentIds.Contains(enrollmentId)) throw new DomainException("A student does not belong to this class.");
             var rec = await db.PromotionRecommendations.SingleOrDefaultAsync(p => p.EnrollmentId == enrollmentId);
-
             if (rec == null)
                 db.PromotionRecommendations.Add(new PromotionRecommendation
-                {
-
-                    EnrollmentId = enrollmentId,
-                    Decision = decision,
-                    SubmittedByTeacherId = coordinatorTeacherId
-
-                });
+                { EnrollmentId = enrollmentId, Decision = decision, SubmittedByTeacherId = coordinatorTeacherId });
             else if (rec.SubmittedToAdmin && rec.AdminDecision != AdminDecision.Rejected)
-                throw new DomainException("Recommedation already sent to admin cannot be changed.");
-            else
-            {
-                rec.Decision = decision;
-                rec.SubmittedByTeacherId = coordinatorTeacherId;
-            }
+                throw new DomainException("Recommendations already sent to admin cannot be changed.");
+            else { rec.Decision = decision; rec.SubmittedByTeacherId = coordinatorTeacherId; }
         }
         await db.SaveChangesAsync();
-
     }
 
     public async Task SubmitToAdminAsync(int coordinatorTeacherId, int classYearId)
     {
+        await EnsurePromotionOpenAsync(classYearId);
         if (!await db.ClassYears.AnyAsync(c => c.Id == classYearId && c.CoordinatorTeacherId == coordinatorTeacherId))
             throw new DomainException("You are not the coordinator of this class.");
 
-
         var active = await db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome == EnrollmentOutcome.Pending
-                                                    && e.Student.Status == StudentStatus.Active).Select(e => e.Id).ToListAsync();
+                                                     && e.Student.Status == StudentStatus.Active).Select(e => e.Id).ToListAsync();
         var recs = await db.PromotionRecommendations.Where(p => active.Contains(p.EnrollmentId)).ToListAsync();
         if (recs.Count != active.Count) throw new DomainException("Every student needs a promote/repeat recommendation first.");
         foreach (var r in recs) { r.SubmittedToAdmin = true; r.AdminDecision = AdminDecision.Pending; r.AdminNote = null; }
@@ -73,6 +67,7 @@ public class PromotionService(AppDbContext db)
     /// Promoted students go to the same course and group one form up (override by moving them afterwards if needed).</summary>
     public async Task ApproveClassAsync(int classYearId, int nextAcademicYearId)
     {
+        await EnsurePromotionOpenAsync(classYearId);
         var cy = await db.ClassYears.Include(c => c.SchoolClass).SingleOrDefaultAsync(c => c.Id == classYearId)
                  ?? throw new DomainException("Class not found.");
         if (cy.AcademicYearId == nextAcademicYearId) throw new DomainException("Next academic year must differ from the class's year.");

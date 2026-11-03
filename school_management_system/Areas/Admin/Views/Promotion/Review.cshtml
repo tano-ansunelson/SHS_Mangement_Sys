@@ -7,6 +7,10 @@
     <span> · Form 3 students recommended for promotion will graduate.</span>
 }
 </p></div><div class="actions"><a class="btn" asp-action="Index" asp-route-nextYearId="@nextId">Back</a></div></div>
+@if (ViewData["Open"] is not true)
+{
+    <div class="alert info">Promotion can only be approved in the second semester. Start it from <a asp-controller="Years" asp-action="Index">Academic years</a>.</div>
+}
 <div class="card">
     <div class="card-body flush table-wrap">
         <table class="data">
