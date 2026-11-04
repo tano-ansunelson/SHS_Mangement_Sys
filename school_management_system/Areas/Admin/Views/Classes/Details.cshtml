@@ -8,7 +8,11 @@
 }
 <div class="page-head">
     <div><h1>@ViewData["Title"]</h1><p>Current academic year overview.</p></div>
-    <div class="actions"><a class="btn" asp-action="Edit" asp-route-id="@Model.Id">Edit subjects</a><a class="btn" asp-action="Index">All classes</a></div>
+    <div class="actions">
+        <a class="btn" asp-action="Edit" asp-route-id="@(((SchoolClass)ViewData["Class"]!).Id)">Edit subjects</a>
+        @* <a class="btn" asp-action="Edit" asp-route-id="@Model.Id">Edit subjects</a> *@
+        <a class="btn" asp-action="Index">All classes</a>
+    </div>
 </div>
 @if (cy == null)
 {

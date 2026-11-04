@@ -47,6 +47,16 @@ public class YearsController(AppDbContext db, AcademicSetupService setup) : Admi
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> SyncClasses(int id)
+    {
+        int added = 0;
+        if (await Run(async () => added = await setup.SyncClassesAsync(id)))
+            Flash(added == 0 ? "Every class already has a record for this year." : $"Added {added} class(es) to this academic year.");
+        return RedirectToAction(nameof(Index));
+    }
+
+
+    [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> StartSemester(int id)
     {
         await Run(() => setup.StartSemesterAsync(id), "Semester started. Promotion is open only while the second semester is current.");
@@ -71,6 +81,7 @@ public class YearsController(AppDbContext db, AcademicSetupService setup) : Admi
         return View("AssessmentForm", vm);
     }
 
+
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleAssessment(int id)
     {
@@ -87,7 +98,6 @@ public class YearsController(AppDbContext db, AcademicSetupService setup) : Admi
         var a = await Db.Assessments.FindAsync(id);
         return a == null ? NotFound() : Confirm("Delete examination", $"Delete “{a.Title}”? Only possible while no scores exist.", Url.Action(nameof(DeleteAssessmentConfirmed))!, id, Url.Action(nameof(Index))!);
     }
-
 
 
 

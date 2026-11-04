@@ -27,6 +27,13 @@
             </div>
         </div>
         <div class="field" style="max-width:240px"><label asp-for="Group">Group</label><input asp-for="Group" readonly="@edit" placeholder="A" /><span asp-validation-for="Group"></span></div>
+        @if (!edit)
+        {
+            <div class="field">
+                <label class="check" style="width:max-content"><input type="checkbox" asp-for="AllForms" /> Also create Form 1, 2 and 3 of this group</label>
+                <div class="hint">Promotion moves students from Form 1 A to Form 2 A to Form 3 A, so each form of the group needs to exist. Tick this to create all three with the same subjects.</div>
+            </div>
+        }
         <div class="field">
             <label>Subjects</label>
             <label class="check" style="margin-bottom:8px;width:max-content"><input type="checkbox" data-all=".subj" /> Select all</label>
