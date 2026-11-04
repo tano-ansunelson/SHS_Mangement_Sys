@@ -3,7 +3,11 @@
 @{
     var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit grade" : "Add grade";
 }
-<div class="page-head"><div><h1>@ViewData["Title"]</h1></div></div>
+<div class="page-head">
+    <div>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
 <div class="card">
     <div class="card-body">
         <form method="post" class="form" asp-action="@(edit ? "Edit" : "Create")">
@@ -14,11 +18,12 @@
                     <input asp-for="MinScore" type="number" step="0.5" />
                     <span asp-validation-for="MinScore"></span>
                 </div>
-                <div class="field"><label asp-for="Grade">
+                <div class="field">
+                    <label asp-for="Grade">
 
-                </label><input asp-for="Grade" placeholder="A1" />
-                <span asp-validation-for="Grade"></span>
-            </div>
+                    </label><input asp-for="Grade" placeholder="A1" />
+                    <span asp-validation-for="Grade"></span>
+                </div>
             </div>
             <div class="field">
                 <label asp-for="Remark"></label>

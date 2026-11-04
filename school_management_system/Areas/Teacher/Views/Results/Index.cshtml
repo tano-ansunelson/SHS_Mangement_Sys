@@ -30,14 +30,26 @@
     {
         <div class="card-body flush table-wrap">
             <table class="data">
-                <thead><tr><th>Subject</th><th>Class</th><th>Progress</th><th>Status</th><th></th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Class</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
                 <tbody>
                     @foreach (var r in Model)
                     {
                         <tr>
-                            <td><b>@r.Subject</b></td>
+                            <td>
+                                <b>@r.Subject</b>
+                            </td>
                             <td>@r.ClassName</td>
-                            <td><div class="progress" style="width:130px"><span style="width:@Ui.Pct(r.Entered, r.Students)%"></span></div><div class="muted small">@r.Entered of @r.Students entered</div></td>
+                            <td>
+                                <div class="progress" style="width:130px"><span style="width:@Ui.Pct(r.Entered, r.Students)%"></span></div><div class="muted small">@r.Entered of @r.Students entered</div>
+                            </td>
                             <td>
                                 @if (r.HasReturned)
                                 {

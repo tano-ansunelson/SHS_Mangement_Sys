@@ -8,13 +8,13 @@
 <form method="post" class="form">
     @if (!ViewData.ModelState.IsValid)
     {
-        <div class="alert error"><div asp-validation-summary="All"></div></div>
+        <div class="alert error">
+            <div asp-validation-summary="All"></div>
+            </div>
     }
     <input type="hidden" asp-for="ReturnUrl" />
     <div class="field">
-        <label asp-for="Email">
-
-        </label>
+        <label asp-for="Email"></label>
         <input asp-for="Email" autofocus />
     </div>
     <div class="field">
