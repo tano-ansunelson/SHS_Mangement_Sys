@@ -35,31 +35,39 @@ public class YearsController(AppDbContext db, AcademicSetupService setup) : Admi
     public async Task<IActionResult> Create(YearVm vm)
     {
         if (!ModelState.IsValid) return View("Form", vm);
-        if (!await Run(() => setup.CreateAcademicYearAsync(vm.Name, vm.MakeCurrent), "Academic year created with two semesters and a record for every class.")) return View("Form", vm);
+        if (!await Run(() => setup.CreateAcademicYearAsync(vm.Name, vm.MakeCurrent),
+            "Academic year created with two semesters and a record for every class."))
+            return View("Form", vm);
         return RedirectToAction(nameof(Index));
     }
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> SetCurrent(int id)
     {
-        await Run(() => setup.SetCurrentYearAsync(id), "Current academic year changed.");
+        await Run(() => setup.SetCurrentYearAsync(id), 
+            "Current academic year changed.");
         return RedirectToAction(nameof(Index));
     }
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> SyncClasses(int id)
     {
-        int added = 0;
-        if (await Run(async () => added = await setup.SyncClassesAsync(id)))
-            Flash(added == 0 ? "Every class already has a record for this year." : $"Added {added} class(es) to this academic year.");
+        (int Classes, int Carried) result = default;
+        if (await Run(async () => result = await setup.SyncClassesAsync(id)))
+            Flash(result.Classes == 0 && result.Carried == 0 ? 
+                "Nothing to add: every class and staff position is already filled for this year."
+                : $"Added {result.Classes} class(es) and carried over {result.Carried}" +
+                $" coordinator, teacher or hall master assignment(s) from the year before.");
         return RedirectToAction(nameof(Index));
     }
+
 
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> StartSemester(int id)
     {
-        await Run(() => setup.StartSemesterAsync(id), "Semester started. Promotion is open only while the second semester is current.");
+        await Run(() => setup.StartSemesterAsync(id),
+            "Semester started. Promotion is open only while the second semester is current.");
         return RedirectToAction(nameof(Index));
     }
 

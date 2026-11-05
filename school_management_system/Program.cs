@@ -4,6 +4,7 @@ using school_management_system.Data;
 using school_management_system.Models;
 using school_management_system.Models.Enums;
 using school_management_system.Service;
+using static school_management_system.Service.HallService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,7 @@ builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email
 
 
 builder.Services.AddScoped<CredentialService>();
+builder.Services.AddScoped<StaffContinuityService>();
 builder.Services.AddScoped<AcademicSetupService>();
 builder.Services.AddScoped<StudentService>();
 builder.Services.AddScoped<TeacherService>();
@@ -56,10 +58,6 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("HallMasterOnly", p => p.RequireRole(Roles.HallMaster))
     .AddPolicy("StudentOnly", p => p.RequireRole(Roles.Student))
      .SetFallbackPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
-
-
-
-
 
 
 

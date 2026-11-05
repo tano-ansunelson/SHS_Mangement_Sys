@@ -101,10 +101,13 @@ public class StudentService(AppDbContext db, CredentialService creds, IOptions<S
                  ?? throw new DomainException("Class not found.");
         if (r.Residence == ResidenceType.Boarding && r.HallId is null)
             throw new DomainException("Boarding students must be assigned a hall.");
-        if (r.Residence == ResidenceType.Boarding && !await db.Halls.AnyAsync(h => h.Id == r.HallId))
-            throw new DomainException("Hall not found.");
-        if (!p.HasContact)
-            throw new DomainException("Enter at least one parent or guardian with a name and phone number.");
+        if (r.Residence == ResidenceType.Boarding)
+        {
+            var hall = await db.Halls.SingleOrDefaultAsync(h => h.Id == r.HallId) ?? throw new DomainException("Hall not found.");
+            if (hall.Gender != null && hall.Gender != p.Gender)
+                throw new DomainException($"{hall.Name} is a {(hall.Gender == Gender.Male ? "boys" : "girls")}' hall. Choose a hall that matches the student's gender.");
+        }
+        if (!p.HasContact) throw new DomainException("Enter at least one parent or guardian with a name and phone number.");
         var admission = Text.Clean(p.AdmissionNumber);
         if (admission != null && await db.Students.AnyAsync(s => s.AdmissionNumber == admission))
             throw new DomainException("This admission number is already used by another student.");
@@ -114,46 +117,41 @@ public class StudentService(AppDbContext db, CredentialService creds, IOptions<S
         var seq = await creds.NextNumberAsync(prefix);
         var number = $"{prefix}-{seq:D4}";
 
-        var (user, password) = await creds.CreateAccountAsync
-            (
-            r.FullName,
-            Roles.Student,
-            opt.Value.StudentEmailDomain
-            );
-        var student =
-            new Student
-            { UserId = user.Id, 
-                StudentNumber = number, 
-                CourseId = cy.SchoolClass.CourseId, 
-                Residence = r.Residence 
-            };
+        var (user, password) = await creds.CreateAccountAsync(r.FullName, Roles.Student, opt.Value.StudentEmailDomain);
+        var student = new Student
+        { 
+            UserId = user.Id,
+            StudentNumber = number,
+            CourseId = cy.SchoolClass.CourseId,
+            Residence = r.Residence 
+        };
         p.ApplyTo(student);
         db.Students.Add(student);
-        db.Enrollments.Add(new 
-            Enrollment {
+        db.Enrollments.Add(new Enrollment 
+        {
             Student = student,
-            ClassYearId = cy.Id, 
-            AcademicYearId = cy.AcademicYearId 
+            ClassYearId = cy.Id,
+            AcademicYearId = cy.AcademicYearId
         });
         if (r.Residence == ResidenceType.Boarding)
-            db.HallRegistrations.Add(new
-                HallRegistration { 
-                Student = student,
+            db.HallRegistrations.Add(new HallRegistration 
+            { 
+                Student = student, 
                 HallId = r.HallId!.Value,
                 AcademicYearId = cy.AcademicYearId 
             });
         await db.SaveChangesAsync();
         await tx.CommitAsync();
         return new AccountCredentials(
-            user.FullName, 
-            user.Email!,
-            password,
-            number);
+            user.FullName,
+            user.Email!, 
+            password, number
+            );
     }
 }
 
 
-public class TeacherService(AppDbContext db, CredentialService creds, IOptions<SchoolOptions> opt)
+public class TeacherService(AppDbContext db, CredentialService creds, IOptions<SchoolOptions> opt, StaffContinuityService continuity)
 {
     public async Task<AccountCredentials> CreateAsync(CreateTeacherRequest r)
     {
@@ -188,10 +186,10 @@ public class TeacherService(AppDbContext db, CredentialService creds, IOptions<S
 
     public async Task RemoveAssignmentAsync(int teachingAssignmentId)
     {
-        var ta = await db.TeachingAssignments
-            .FindAsync(teachingAssignmentId) ?? throw new DomainException("Assignment not found.");
+        var ta = await db.TeachingAssignments.FindAsync(teachingAssignmentId) ?? throw new DomainException("Assignment not found.");
         if (await db.Results.AnyAsync(r => r.SubjectId == ta.SubjectId && r.Enrollment.ClassYearId == ta.ClassYearId))
-            throw new DomainException("This assignment already has result and is kept as a record.");
+            throw new DomainException("This assignment already has results and is kept as a record.");
+        await continuity.OnTeachingRemovedAsync(ta.ClassYearId, ta.SubjectId, ta.TeacherId);   // later years that copied it follow
         db.TeachingAssignments.Remove(ta);
         await db.SaveChangesAsync();
     }
@@ -216,8 +214,10 @@ public class TeacherService(AppDbContext db, CredentialService creds, IOptions<S
             if (await db.TeachingAssignments.AnyAsync(t => t.SubjectId == s.SubjectId && t.ClassYearId == s.ClassYearId))
                 throw new DomainException("That subject already has a teacher in the selected class.");
             db.TeachingAssignments.Add(new TeachingAssignment { TeacherId = teacherId, SubjectId = s.SubjectId, ClassYearId = s.ClassYearId });
+            await continuity.OnTeachingAddedAsync(s.ClassYearId, s.SubjectId, teacherId);   // stays in the next years until the admin changes it
         }
     }
+
 
 
     private async Task ApplyCoordinatorAsync(int teacherId, int classYearId)
@@ -225,6 +225,8 @@ public class TeacherService(AppDbContext db, CredentialService creds, IOptions<S
         var cy = await db.ClassYears.SingleOrDefaultAsync(c => c.Id == classYearId) ?? throw new DomainException("Class not found.");
         if (cy.CoordinatorTeacherId is not null && cy.CoordinatorTeacherId != teacherId)
             throw new DomainException("This class already has a coordinator.");
+        var old = cy.CoordinatorTeacherId;
         cy.CoordinatorTeacherId = teacherId;
+        await continuity.OnCoordinatorChangedAsync(classYearId, old, teacherId);
     }
 }
