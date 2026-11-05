@@ -7,15 +7,18 @@ using school_management_system.Models.Enums;
 using school_management_system.Service;
 
 namespace school_management_system.Areas.Admin.Controllers;
-public class ClassesController(AppDbContext db, AcademicSetupService setup) : AdminBase(db) 
+public class ClassesController(AppDbContext db, AcademicSetupService setup, StaffContinuityService continuity) : AdminBase(db) 
 {
 
 
     public async Task<IActionResult> Index() =>
-         View(await Db.SchoolClasses.OrderBy(c => c.Course.Name).ThenBy(c => c.FormLevel).ThenBy(c => c.Group)
-             .Select(c => new ClassRow(c.Id, c.Course.Name, c.FormLevel, c.Group,
-                 Db.ClassSubjects.Count(s => s.SchoolClassId == c.Id),
-                 Db.Enrollments.Count(e => e.ClassYear.SchoolClassId == c.Id && e.AcademicYear.IsCurrent && e.Outcome == EnrollmentOutcome.Pending))).ToListAsync());
+        View(await Db.SchoolClasses.OrderBy(c => c.Course.Name).ThenBy(c => c.FormLevel).ThenBy(c => c.Group)
+            .Select(c => new ClassRow(c.Id, c.Course.Name, c.FormLevel, c.Group,
+                Db.ClassSubjects.Count(s => s.SchoolClassId == c.Id),
+                Db.Enrollments.Count(e =>
+                e.ClassYear.SchoolClassId == c.Id && 
+                e.AcademicYear.IsCurrent && e.Outcome == EnrollmentOutcome.Pending)))
+            .ToListAsync());
 
 
 
@@ -40,6 +43,7 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
         Flash(made == 1 ? "Class created." : $"{made} classes created (one for each form).");
         return RedirectToAction(nameof(Index));
     }
+
 
 
 
@@ -73,6 +77,7 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
 
 
 
+
     public async Task<IActionResult> Details(int id)
     {
         var c = await Db.SchoolClasses.Include(x => x.Course).SingleOrDefaultAsync(x => x.Id == id);
@@ -101,7 +106,9 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
     {
         var cy = await Db.ClassYears.FindAsync(classYearId);
         if (cy == null) return NotFound();
+        var old = cy.CoordinatorTeacherId;
         cy.CoordinatorTeacherId = teacherId;
+        await continuity.OnCoordinatorChangedAsync(cy.Id, old, teacherId);   // later years follow until the admin changes it again
         await Db.SaveChangesAsync();
         Flash(teacherId == null ? "Coordinator removed." : "Coordinator updated.");
         return RedirectToAction(nameof(Details), new { id = cy.SchoolClassId });
@@ -112,7 +119,11 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
     public async Task<IActionResult> Delete(int id)
     {
         var c = await Db.SchoolClasses.Include(x => x.Course).SingleOrDefaultAsync(x => x.Id == id);
-        return c == null ? NotFound() : Confirm("Delete class", $"Delete {ClassLabel(c)}? Only empty classes can be deleted.", Url.Action(nameof(DeleteConfirmed))!, id, Url.Action(nameof(Index))!);
+        return c == null ? NotFound() : 
+            Confirm("Delete class", $"Delete " +
+            $"{ClassLabel(c)}? Only empty classes can be deleted.",
+            Url.Action(nameof(DeleteConfirmed))!,
+            id, Url.Action(nameof(Index))!);
     }
 
     [HttpPost, ValidateAntiForgeryToken]

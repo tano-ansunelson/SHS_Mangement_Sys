@@ -5,7 +5,7 @@ using school_management_system.Models.Enums;
 
 namespace school_management_system.Service;
 
-public class AcademicSetupService(AppDbContext db)
+public class AcademicSetupService(AppDbContext db, StaffContinuityService continuity)
 {
     public async Task<AcademicYear> CreateAcademicYearAsync(string name, bool makeCurrent)
     {
@@ -24,19 +24,28 @@ public class AcademicSetupService(AppDbContext db)
         foreach (var classId in await db.SchoolClasses.Select(c => c.Id).ToListAsync())
             db.ClassYears.Add(new ClassYear { SchoolClassId = classId, AcademicYear = year });
         await db.SaveChangesAsync();
+
+        // last year's coordinators, subject teachers and hall masters stay in place until the admin changes them
+        var previous = await continuity.PreviousYearIdAsync(year.Id);
+        if (previous != null) { await continuity.CarryForwardAsync(previous.Value, year.Id); await db.SaveChangesAsync(); }
         await tx.CommitAsync();
         return year;
     }
 
 
     /// <summary>Adds the year's record for every class that does not have one (for classes created after the year).</summary>
-    public async Task<int> SyncClassesAsync(int academicYearId)
+    public async Task<(int Classes, int Carried)> SyncClassesAsync(int academicYearId)
     {
         if (!await db.AcademicYears.AnyAsync(y => y.Id == academicYearId)) throw new DomainException("Academic year not found.");
         var missing = await db.SchoolClasses.Where(c => !db.ClassYears.Any(x => x.SchoolClassId == c.Id && x.AcademicYearId == academicYearId)).Select(c => c.Id).ToListAsync();
         foreach (var id in missing) db.ClassYears.Add(new ClassYear { SchoolClassId = id, AcademicYearId = academicYearId });
         await db.SaveChangesAsync();
-        return missing.Count;
+
+        // also fill any coordinator, subject teacher or hall master still empty from the year before
+        var previous = await continuity.PreviousYearIdAsync(academicYearId);
+        var carried = previous == null ? 0 : await continuity.CarryForwardAsync(previous.Value, academicYearId);
+        await db.SaveChangesAsync();
+        return (missing.Count, carried);
     }
 
 
@@ -51,6 +60,7 @@ public class AcademicSetupService(AppDbContext db)
         await tx.CommitAsync();
     }
 
+
     /// <summary>Moves the school into a semester of an academic year. Promotion opens when semester 2 is current.</summary>
     public async Task StartSemesterAsync(int semesterId)
     {
@@ -62,6 +72,9 @@ public class AcademicSetupService(AppDbContext db)
         await db.Semesters.Where(s => s.Id == semesterId).ExecuteUpdateAsync(s => s.SetProperty(x => x.IsCurrent, true));
         await tx.CommitAsync();
     }
+
+
+
     public async Task SetCourseSubjectsAsync(int courseId, IEnumerable<int> subjectIds)
     {
         var ids = subjectIds.Distinct().ToList();
@@ -71,6 +84,7 @@ public class AcademicSetupService(AppDbContext db)
             db.CourseSubjects.Add(new CourseSubject { CourseId = courseId, SubjectId = id });
         await db.SaveChangesAsync();
     }
+
 
     /// <summary>Creates a permanent class (e.g. Form 1 General Science A). Subjects default to the course's subjects.</summary>
     public async Task<SchoolClass> CreateClassAsync(int courseId, int formLevel, string group, IEnumerable<int>? subjectIds = null)
@@ -114,6 +128,7 @@ public class AcademicSetupService(AppDbContext db)
             db.ClassSubjects.Add(new ClassSubject { SchoolClassId = classId, SubjectId = id });
         await db.SaveChangesAsync();
     }
+
 
     public async Task<Assessment> CreateAssessmentAsync(int semesterId, AssessmentType type, string? title = null)
     {

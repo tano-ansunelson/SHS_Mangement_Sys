@@ -64,6 +64,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
         return View("Credentials", creds);
     }
 
+
     public async Task<IActionResult> Details(int id)
     {
         var s = await Db.Students.Include(x => x.User).Include(x => x.Course).SingleOrDefaultAsync(x => x.Id == id);
@@ -76,6 +77,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
         ViewData["Results"] = await results.GetPublishedForStudentAsync(id);
         return View(s);
     }
+
 
     public async Task<IActionResult> Edit(int id)
     {
@@ -117,6 +119,12 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
         if (s == null) return NotFound();
         ModelState.Remove(nameof(vm.ClassYearId)); ModelState.Remove(nameof(vm.AcademicYearId));
         if (vm.Residence == ResidenceType.Boarding && vm.HallId == null) ModelState.AddModelError(nameof(vm.HallId), "Select a hall for a boarding student.");
+        if (vm.Residence == ResidenceType.Boarding && vm.HallId != null)
+        {
+            var hallGender = await Db.Halls.Where(h => h.Id == vm.HallId).Select(h => h.Gender).FirstOrDefaultAsync();
+            if (hallGender != null && hallGender != vm.Gender)
+                ModelState.AddModelError(nameof(vm.HallId), $"This is a {(hallGender == Gender.Male ? "boys" : "girls")}' hall. Choose a hall that matches the student's gender.");
+        }
         if (!vm.HasContact) ModelState.AddModelError("", "Enter at least one parent or guardian with a name and phone number.");
         var admission = vm.AdmissionNumber?.Trim();
         if (!string.IsNullOrEmpty(admission) && await Db.Students.AnyAsync(x => x.AdmissionNumber == admission && x.Id != vm.Id))
@@ -154,6 +162,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
     }
 
 
+
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ResetPassword(int id)
     {
@@ -173,8 +182,6 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
         return s == null ? NotFound() : Confirm("Withdraw student", $"Withdraw {s.User.FullName}? Their login is disabled but all records are kept.", Url.Action(nameof(DeleteConfirmed))!, id, Url.Action(nameof(Details), new { id })!, "Withdraw");
     }
 
-
-
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
@@ -189,6 +196,8 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
         return RedirectToAction(nameof(Index));
     }
 
+
+    // ---------- helpers ----------
     // ---------- helpers ----------
     private async Task<StudentProfile> BuildProfileAsync(StudentVm vm, List<string> saved)
     {
@@ -225,7 +234,6 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
 
 
 
-
     private static void CopyPaths(StudentVm vm, Models.Student s) { vm.PhotoPath = s.PhotoPath; vm.FatherPhotoPath = s.FatherPhotoPath; vm.MotherPhotoPath = s.MotherPhotoPath; }
 
     private async Task<List<ClassOptionRow>> ClassOptions(int? yearId) =>
@@ -242,11 +250,12 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
             .Select(c => new ClassOptionRow(c.Id, "Form " + c.SchoolClass.FormLevel + " " + c.SchoolClass.Course.Name + " " + c.SchoolClass.Group, c.SchoolClass.CourseId, c.AcademicYearId)).ToListAsync();
         ViewBag.Courses = new SelectList(await Db.Courses.OrderBy(c => c.Name).ToListAsync(), "Id", "Name");
         ViewBag.Halls = new SelectList(await Db.Halls.OrderBy(h => h.Name).ToListAsync(), "Id", "Name", vm.HallId);
+        ViewData["HallData"] = await Db.Halls.OrderBy(h => h.Name).Select(h => new HallOption(h.Id, h.Name, h.Gender)).ToListAsync();
         return vm;
     }
 
 
 }
-
 public record EnrollmentRow(string Year, string Class, EnrollmentOutcome Outcome, string? Hall, string? Room);
 public record ClassOptionRow(int Id, string Name, int CourseId, int YearId);
+public record HallOption(int Id, string Name, Gender? Gender);

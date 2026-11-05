@@ -30,8 +30,8 @@
                 </h2>
                 <span class="muted small">@y.Classes classes · @y.Students enrollments</span>
             </div>
-            <form method="post" asp-action="SyncClasses" asp-route-id="@y.Id" title="Adds this year's record for classes that were created after the year">
-                <button class="btn sm ghost">Add missing classes</button>
+            <form method="post" asp-action="SyncClasses" asp-route-id="@y.Id" title="Adds classes created after this year and fills empty coordinator, subject teacher and hall master positions from the year before">
+                <button class="btn sm ghost">Sync classes &amp; staff</button>
             </form>
             @if (!y.IsCurrent)
             {
