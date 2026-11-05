@@ -29,6 +29,19 @@ public class AcademicSetupService(AppDbContext db)
     }
 
 
+    /// <summary>Adds the year's record for every class that does not have one (for classes created after the year).</summary>
+    public async Task<int> SyncClassesAsync(int academicYearId)
+    {
+        if (!await db.AcademicYears.AnyAsync(y => y.Id == academicYearId)) throw new DomainException("Academic year not found.");
+        var missing = await db.SchoolClasses.Where(c => !db.ClassYears.Any(x => x.SchoolClassId == c.Id && x.AcademicYearId == academicYearId)).Select(c => c.Id).ToListAsync();
+        foreach (var id in missing) db.ClassYears.Add(new ClassYear { SchoolClassId = id, AcademicYearId = academicYearId });
+        await db.SaveChangesAsync();
+        return missing.Count;
+    }
+
+
+
+
     public async Task SetCurrentYearAsync(int yearId)
     {
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -75,9 +88,11 @@ public class AcademicSetupService(AppDbContext db)
         db.SchoolClasses.Add(cls);
         foreach (var id in ids) db.ClassSubjects.Add(new ClassSubject { SchoolClass = cls, SubjectId = id });
 
-        // make the class usable immediately in every existing academic year that is current or later
-        var year = await db.AcademicYears.SingleOrDefaultAsync(y => y.IsCurrent);
-        if (year != null) db.ClassYears.Add(new ClassYear { SchoolClass = cls, AcademicYearId = year.Id });
+        // make the class usable immediately in the current academic year and any later one that already exists
+        var current = await db.AcademicYears.SingleOrDefaultAsync(y => y.IsCurrent);
+        if (current != null)
+            foreach (var y in await db.AcademicYears.Where(y => string.Compare(y.Name, current.Name) >= 0).ToListAsync())
+                db.ClassYears.Add(new ClassYear { SchoolClass = cls, AcademicYearId = y.Id });
         await db.SaveChangesAsync();
         await tx.CommitAsync();
         return cls;

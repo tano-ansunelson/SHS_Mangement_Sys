@@ -4,22 +4,44 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] · Scholar SHS</title>
-    <script>(function () { try { var t = localStorage.getItem('theme'); if (!t) { t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' } document.documentElement.setAttribute('data-theme', t) } catch (e) { document.documentElement.setAttribute('data-theme', 'light') } })();</script>
+    <script>
+            (function () {
+                try {
+                    var t = localStorage.getItem('theme');
+                    if (!t) {
+                        t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+                    }
+                    document.documentElement.setAttribute('data-theme', t)
+                }
+                catch (e) {
+                    document.documentElement.setAttribute('data-theme', 'light')
+                }
+            })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <div class="theme-float"><button class="btn sm theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark mode"><span class="dot"></span><span data-theme-label>Dark mode</span></button></div>
+    <div class="theme-float">
+        <button class="btn sm theme-toggle" type="button" data-theme-toggle aria-label="Switch between light and dark mode"><span class="dot"></span><span data-theme-label>Dark mode</span></button>
+    </div>
     <div class="auth">
         <section class="auth-art">
-            <div class="brand" style="border:0;padding:0"><div class="brand-mark" style="background:#fff;color:#1c2733">S</div><div><strong style="color:#fff">Scholar SHS</strong></div></div>
+            <div class="brand" style="border:0;padding:0">
+                <div class="brand-mark" style="background:#fff;color:#1c2733">S</div>
+                <div>
+                    <strong style="color:#fff">Scholar SHS</strong>
+                </div>
+            </div>
             <div>
                 <h1>One place for classes, results and boarding.</h1>
                 <p>Admin, teachers, hall masters and students each get a portal built for their work.</p>
             </div>
             <small style="color:#8b98a5">Senior High School Management System</small>
         </section>
-        <section class="auth-form"><div class="auth-card">@RenderBody()</div></section>
+        <section class="auth-form">
+            <div class="auth-card">@RenderBody()</div>
+        </section>
     </div>
     <script src="~/js/site.js" asp-append-version="true"></script>
 </body>

@@ -1,5 +1,13 @@
 ﻿@model List<SemesterResultRow>
-<div class="page-head"><div><h1>My results</h1><p>Only results released by the school appear here. The semester total is your midterm score plus your final exam score.</p></div><div class="actions"><button class="btn" onclick="window.print()">Print</button></div></div>
+<div class="page-head">
+    <div>
+        <h1>My results</h1>
+        <p>Only results released by the school appear here. The semester total is your midterm score plus your final exam score.</p>
+    </div>
+    <div class="actions">
+        <button class="btn" onclick="window.print()">Print</button>
+    </div>
+</div>
 @if (!Model.Any())
 {
     <div class="card empty">No results have been published yet.</div>
@@ -7,7 +15,9 @@
 @foreach (var year in Model.GroupBy(r => new { r.AcademicYear, r.FormLevel }))
 {
     <div class="card">
-        <div class="card-head"><h2>Form @year.Key.FormLevel · @year.Key.AcademicYear</h2></div>
+        <div class="card-head">
+            <h2>Form @year.Key.FormLevel · @year.Key.AcademicYear</h2>
+        </div>
         @foreach (var sem in year.GroupBy(r => r.Semester))
         {
             var totals = sem.Where(x => x.Total != null).Select(x => x.Total!.Value).ToList();
@@ -20,7 +30,16 @@
                     }
                 </div>
                 <table class="data">
-                    <thead><tr><th>Subject</th><th>Teacher</th><th class="num">Midterm score</th><th class="num">Final exam score</th><th class="num">Total</th><th>Grade</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Teacher</th>
+                            <th class="num">Midterm score</th>
+                            <th class="num">Final exam score</th>
+                            <th class="num">Total</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         @foreach (var r in sem)
                         {
@@ -30,19 +49,22 @@
                                 <td class="num">@(r.Midterm?.ToString("0.#") ?? "—")</td>
                                 <td class="num">@(r.Final?.ToString("0.#") ?? "—")</td>
                                 <td class="num"><b>@(r.Total?.ToString("0.#") ?? "—")</b></td>
-                                <td>@if (r.Total != null) {
-                                    <span class="badge info">@r.Grade</span>
-                                } else
-                                {
+                                <td>
+                                    @if (r.Total != null)
+                                    {
+                                        <span class="badge info">@r.Grade</span>
+                                    }
+                                    else
+                                    {
 
-                                    <span class="muted small">awaiting final</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-</div>
+                                        <span class="muted small">awaiting final</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 }

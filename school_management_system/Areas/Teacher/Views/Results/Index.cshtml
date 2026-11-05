@@ -4,7 +4,12 @@
 @{
     ViewData["Title"] = "Enter results"; var aid = ViewData["AssessmentId"] as int?;
 }
-<div class="page-head"><div><h1>Enter results</h1><p>Choose an examination, then open a subject and class to enter scores.</p></div></div>
+<div class="page-head">
+    <div>
+        <h1>Enter results</h1>
+        <p>Choose an examination, then open a subject and class to enter scores.</p>
+    </div>
+</div>
 <div class="card">
     <div class="toolbar">
         <form method="get" style="display:flex;gap:10px;align-items:center">
@@ -25,37 +30,52 @@
     {
         <div class="card-body flush table-wrap">
             <table class="data">
-                <thead><tr><th>Subject</th><th>Class</th><th>Progress</th><th>Status</th><th></th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Class</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
                 <tbody>
                     @foreach (var r in Model)
                     {
                         <tr>
-                            <td><b>@r.Subject</b></td>
+                            <td>
+                                <b>@r.Subject</b>
+                            </td>
                             <td>@r.ClassName</td>
-                            <td><div class="progress" style="width:130px"><span style="width:@Ui.Pct(r.Entered, r.Students)%"></span></div><div class="muted small">@r.Entered of @r.Students entered</div></td>
-                            <td>@if (r.HasReturned) {
-                                <span class="badge bad">Returned for correction</span>
-                            } else if (r.Submitted)
-                            {
+                            <td>
+                                <div class="progress" style="width:130px"><span style="width:@Ui.Pct(r.Entered, r.Students)%"></span></div><div class="muted small">@r.Entered of @r.Students entered</div>
+                            </td>
+                            <td>
+                                @if (r.HasReturned)
+                                {
+                                    <span class="badge bad">Returned for correction</span>
+                                }
+                                else if (r.Submitted)
+                                {
 
-                                <span class="badge info">Submitted</span>
-                            }
-                            else if (r.Entered > 0)
-                            {
+                                    <span class="badge info">Submitted</span>
+                                }
+                                else if (r.Entered > 0)
+                                {
 
-                                <span class="badge warn">Draft</span>
-                            }
-                            else
-                            {
+                                    <span class="badge warn">Draft</span>
+                                }
+                                else
+                                {
 
-                                <span class="badge">Not started</span>
-                            }
-                        </td>
-                        <td class="right"><a class="btn sm primary" asp-action="Entry" asp-route-classYearId="@r.ClassYearId" asp-route-subjectId="@r.SubjectId" asp-route-assessmentId="@aid">@(r.Submitted ? "View" : "Enter scores")</a></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
+                                    <span class="badge">Not started</span>
+                                }
+                            </td>
+                            <td class="right"><a class="btn sm primary" asp-action="Entry" asp-route-classYearId="@r.ClassYearId" asp-route-subjectId="@r.SubjectId" asp-route-assessmentId="@aid">@(r.Submitted ? "View" : "Enter scores")</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>

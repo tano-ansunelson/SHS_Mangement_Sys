@@ -72,6 +72,8 @@ public class ClassVm
     public int FormLevel { get; set; } = 1;
     [Required, StringLength(3)] 
     public string Group { get; set; } = "A";
+    [Display(Name = "Also create Form 1, 2 and 3 of this group")] 
+    public bool AllForms { get; set; } = true;
     public List<int> SubjectIds { get; set; } = new();
     public List<Subject> AllSubjects { get; set; } = new();
     public List<Course> Courses { get; set; } = new();
@@ -183,23 +185,31 @@ public record PhotoFieldVm(string Name, string Label, string? Current);
 public class HallVm
 {
     public int Id { get; set; }
-    [Required, StringLength(80)] public string Name { get; set; } = "";
+    [Required, StringLength(80)]
+    public string Name { get; set; } = "";
     public Gender? Gender { get; set; }
-    [Range(0, 500), Display(Name = "Number of rooms")] public int RoomCount { get; set; }
-    [Range(1, 50), Display(Name = "Beds per room")] public int Capacity { get; set; } = 4;
+
+    [Range(0, 500), Display(Name = "Number of rooms")] 
+    public int RoomCount { get; set; }
+    [Range(1, 50), Display(Name = "Beds per room")] 
+    public int Capacity { get; set; } = 4;
 }
 
 public class RoomVm
 {
     public int Id { get; set; }
     public int HallId { get; set; }
-    [Required, StringLength(20), Display(Name = "Room number")] public string Number { get; set; } = "";
-    [Range(1, 50)] public int Capacity { get; set; } = 4;
+    [Required, StringLength(20), Display(Name = "Room number")]
+    public string Number { get; set; } = "";
+    [Range(1, 50)] 
+    public int Capacity { get; set; } = 10;
 }
 public class YearVm
 {
-    [Required, RegularExpression(@"^\d{4}/\d{4}$", ErrorMessage = "Use the format 2025/2026.")] public string Name { get; set; } = "";
-    [Display(Name = "Make this the current year")] public bool MakeCurrent { get; set; } = true;
+    [Required, RegularExpression(@"^\d{4}/\d{4}$", ErrorMessage = "Use the format 2025/2026.")]
+    public string Name { get; set; } = "";
+    [Display(Name = "Make this the current year")]
+    public bool MakeCurrent { get; set; } = true;
 }
 
 public class AssessmentVm

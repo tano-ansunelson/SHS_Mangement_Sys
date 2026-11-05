@@ -3,17 +3,24 @@
 @using school_management_system.Models.Enums
 @model MatrixVm?
 @{
-    var cyId = (int)ViewData["ClassYearId"]!; var aid = ViewData["AssessmentId"] as int?;
+    var cyId = (int)ViewData["ClassYearId"]!;
+    var aid = ViewData["AssessmentId"] as int?;
     var subjects = ViewData["Subjects"] as List<SubjectStatus> ?? new();
 }
 <div class="page-head">
-    <div><h1>@ViewData["ClassName"]</h1><p>Coordinator view: check every subject's results before sending them to the admin.</p></div>
-    <div class="actions"><a class="btn" asp-action="Promotion" asp-route-classYearId="@cyId">Promotion list</a></div>
+    <div>
+        <h1>@ViewData["ClassName"]</h1>
+        <p>Coordinator view: check every subject's results before sending them to the admin.</p>
+    </div>
+    <div class="actions">
+        <a class="btn" asp-action="Promotion" asp-route-classYearId="@cyId">Promotion list</a>
+        </div>
 </div>
 <div class="card">
     <div class="toolbar">
         <form method="get" style="display:flex;gap:10px;align-items:center">
-            <input type="hidden" name="classYearId" value="@cyId" /><label>Examination</label>
+            <input type="hidden" name="classYearId" value="@cyId" />
+            <label>Examination</label>
             <select name="assessmentId" asp-items="(SelectList)ViewBag.Assessments" data-autosubmit></select>
         </form>
     </div>
@@ -37,12 +44,22 @@ else
         </div>
         <div class="card-body flush table-wrap">
             <table class="data">
-                <thead><tr><th>Subject</th><th>Teacher</th><th>Progress</th><th>Status</th><th>Send back</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Teacher</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                        <th>Send back</th>
+                    </tr>
+                    </thead>
                 <tbody>
                     @foreach (var s in subjects)
                     {
-                        <tr>
-                            <td><b>@s.Subject</b></td>
+                    <tr>
+                        <td>
+                                <b>@s.Subject</b>
+                                </td>
                             <td>@(s.Teacher ?? "—")</td>
                             <td>@s.Entered / @s.Students</td>
                             <td>@foreach (var kv in s.Counts) {
@@ -53,12 +70,16 @@ else
                                 <span class="muted">Nothing entered</span>
                             }
                         </td>
+                        
                         <td>
                             @if (s.Counts.ContainsKey(ResultStatus.Submitted))
                             {
                                 <form method="post" asp-action="Return" style="display:flex;gap:6px">
-                                    <input type="hidden" name="classYearId" value="@cyId" /><input type="hidden" name="assessmentId" value="@aid" /><input type="hidden" name="subjectId" value="@s.SubjectId" />
-                                    <input type="text" name="note" placeholder="What to correct" style="min-width:180px" /><button class="btn sm">Return</button>
+                                    <input type="hidden" name="classYearId" value="@cyId" />
+                                    <input type="hidden" name="assessmentId" value="@aid" />
+                                    <input type="hidden" name="subjectId" value="@s.SubjectId" />
+                                    <input type="text" name="note" placeholder="What to correct" style="min-width:180px" />
+                                    <button class="btn sm">Return</button>
                                 </form>
                             }
                         </td>
