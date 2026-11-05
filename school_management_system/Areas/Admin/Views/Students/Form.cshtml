@@ -55,7 +55,9 @@
                         </select>
                         <span asp-validation-for="ClassYearId"></span>
                     </div>
+
                 }
+
                 <div class="field">
                     <label asp-for="RollNumber"></label>
                     <input asp-for="RollNumber" placeholder="Enter roll number" />
@@ -84,27 +86,32 @@
 
 
 
-
-
-
-
-
-                   @*  <select asp-for="HallId" id="HallId">
+                    <select asp-for="HallId" id="HallId">
                         <option value="">Select hall…</option>
                         @foreach (var h in halls)
+                        {
+                            <option value="@h.Id"
+                                    data-gender="@(h.Gender.HasValue ? ((int)h.Gender.Value).ToString() : "")"
+                                    selected="@(h.Id == Model.HallId)">
+                                @(h.Name + (h.Gender == null ? "" : h.Gender == Gender.Male ? " (boys)" : " (girls)"))
+                            </option>
+                        }
+                       @*  @foreach (var h in halls)
                         {
                             <option value="@h.Id" data-gender="@h.Gender" selected="@(h.Id == Model.HallId)">
                                 @(h.Name + (h.Gender == null ? "" : h.Gender == Gender.Male ? " (boys)" : " (girls)"))
 
                             </option>
-                        }
-                    </select> *@
+                        } *@
+                    </select>
                     <span asp-validation-for="HallId"></span>
                     <div class="hint">Only halls for the student's gender (and mixed halls) are listed. The hall master assigns rooms.</div>
                 </div>
             </div>
         </div>
     </div>
+
+
 
     <div class="card">
         <div class="card-head"><h2>Parent &amp; guardian info</h2></div><div class="card-body">
@@ -146,16 +153,36 @@
         res.addEventListener('change', syncHall); syncHall();
 
         // list only the halls that match the selected gender (mixed halls are always listed)
-        const gen = document.getElementById('Gender'), hallSel = document.getElementById('HallId');
+        const gen = document.getElementById('Gender');
+        const hallSel = document.getElementById('HallId');
         const syncHallGender = () => {
-            [...hallSel.options].forEach(o => {
+        [...hallSel.options].forEach(o => {
                 if (!o.value) return;
-                const wrong = o.dataset.gender && o.dataset.gender !== gen.value;
-                o.hidden = wrong; o.disabled = wrong;
+
+                const hallGender = o.dataset.gender;
+
+            // Mixed halls have an empty gender value.
+                const wrong = hallGender !== '' && hallGender !== gen.value;
+
+                o.hidden = wrong;
+            o.disabled = wrong;
             });
-            if (hallSel.selectedOptions[0] && hallSel.selectedOptions[0].disabled) hallSel.value = '';
+
+            if (hallSel.selectedOptions[0]?.disabled) {
+                hallSel.value = '';
+            }
         };
-        gen.addEventListener('change', syncHallGender); syncHallGender();
+        gen.addEventListener('change', syncHallGender);
+        syncHallGender();
+        // const syncHallGender = () => {
+        //     [...hallSel.options].forEach(o => {
+        //         if (!o.value) return;
+        //         const wrong = o.dataset.gender && o.dataset.gender !== gen.value;
+        //         o.hidden = wrong; o.disabled = wrong;
+        //     });
+        //     if (hallSel.selectedOptions[0] && hallSel.selectedOptions[0].disabled) hallSel.value = '';
+        // };
+        // gen.addEventListener('change', syncHallGender); syncHallGender();
 
         const yr = document.getElementById('AcademicYearId'), cf = document.getElementById('courseFilter'), cls = document.getElementById('ClassYearId');
         if (yr && cf && cls) {

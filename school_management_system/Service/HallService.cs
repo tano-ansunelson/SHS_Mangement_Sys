@@ -102,15 +102,55 @@ public class HallService(AppDbContext db, UserManager<ApplicationUser> users, St
         }
 
         /// <summary>Students registered to this hall by admin, with their room if one is set.</summary>
+        //public async Task<List<HallStudentRow>> GetHallStudentsAsync(int hallId)
+        //{
+        //    var year = await db.CurrentYearAsync();
+        //    return await db.HallRegistrations.Where(h => h.HallId == hallId && h.AcademicYearId == year.Id)
+        //        .Select(h => 
+        //        new HallStudentRow(
+        //            h.StudentId, 
+        //            h.Student.User.FullName,
+        //            h.Student.StudentNumber,
+        //            db.RoomAllocations.Where(a => a.StudentId == h.StudentId && a.AcademicYearId == year.Id)
+        //                .Select(a => a.Room.Number).FirstOrDefault()))
+        //        .OrderBy(s => s.Name).ToListAsync();
+        //}
+
+
+        /// <summary>
+        /// Students registered to this hall by admin, with their room if one is set.
+        /// </summary>
         public async Task<List<HallStudentRow>> GetHallStudentsAsync(int hallId)
         {
             var year = await db.CurrentYearAsync();
-            return await db.HallRegistrations.Where(h => h.HallId == hallId && h.AcademicYearId == year.Id)
-                .Select(h => new HallStudentRow(h.StudentId, h.Student.User.FullName, h.Student.StudentNumber,
-                    db.RoomAllocations.Where(a => a.StudentId == h.StudentId && a.AcademicYearId == year.Id)
-                        .Select(a => a.Room.Number).FirstOrDefault()))
-                .OrderBy(s => s.Name).ToListAsync();
+
+            var students = await db.HallRegistrations
+                .Where(h => h.HallId == hallId &&
+                            h.AcademicYearId == year.Id)
+                .Select(h => new
+                {
+                    h.StudentId,
+                    Name = h.Student.User.FullName,
+                    h.Student.StudentNumber,
+
+                    RoomNumber = db.RoomAllocations
+                        .Where(a => a.StudentId == h.StudentId &&
+                                    a.AcademicYearId == year.Id)
+                        .Select(a => a.Room.Number)
+                        .FirstOrDefault()
+                })
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+
+            return students.Select(s => new HallStudentRow(
+                s.StudentId,
+                s.Name,
+                s.StudentNumber,
+                s.RoomNumber
+            )).ToList();
         }
+
+
 
         //public async Task<List<HallStudentRow>> GetHallStudentsAsync(int hallId)
         //{
@@ -128,15 +168,38 @@ public class HallService(AppDbContext db, UserManager<ApplicationUser> users, St
         //        .OrderBy(s => s.Name).ToListAsync();
         //}
 
-
-
         public async Task<List<HallStudentRow>> GetRoomStudentsAsync(int roomId)
         {
             var year = await db.CurrentYearAsync();
-            return await db.RoomAllocations.Where(a => a.RoomId == roomId && a.AcademicYearId == year.Id)
-                .Select(a => new HallStudentRow(a.StudentId, a.Student.User.FullName, a.Student.StudentNumber, a.Room.Number))
-                .OrderBy(s => s.Name).ToListAsync();
+
+            var students = await db.RoomAllocations
+                .Where(a => a.RoomId == roomId &&
+                            a.AcademicYearId == year.Id)
+                .Select(a => new
+                {
+                    a.StudentId,
+                    Name = a.Student.User.FullName,
+                    a.Student.StudentNumber,
+                    RoomNumber = a.Room.Number
+                })
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+
+            return students.Select(s => new HallStudentRow(
+                s.StudentId,
+                s.Name,
+                s.StudentNumber,
+                s.RoomNumber
+            )).ToList();
         }
+
+        //public async Task<List<HallStudentRow>> GetRoomStudentsAsync(int roomId)
+        //{
+        //    var year = await db.CurrentYearAsync();
+        //    return await db.RoomAllocations.Where(a => a.RoomId == roomId && a.AcademicYearId == year.Id)
+        //        .Select(a => new HallStudentRow(a.StudentId, a.Student.User.FullName, a.Student.StudentNumber, a.Room.Number))
+        //        .OrderBy(s => s.Name).ToListAsync();
+        //}
 
         public async Task AllocateAsync(int hallMasterTeacherId, int studentId, int roomId)
         {
