@@ -63,6 +63,7 @@ public class HallService(AppDbContext db, UserManager<ApplicationUser> users, St
             await users.AddToRoleAsync(teacher.User, Roles.HallMaster);
         await tx.CommitAsync();
 
+
         // remove the role from the previous hall master if they no longer run any hall this year
         if (current != null && current.TeacherId != teacherId)
         {
