@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using school_management_system.Data;
 using school_management_system.Models;
 using school_management_system.Models.Enums;
-using school_management_system.Service;
+//using school_management_system.Service;
 using System.Data;
 
 namespace school_management_system.Service;
