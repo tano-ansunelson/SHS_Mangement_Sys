@@ -13,7 +13,7 @@
                 <div class="field"><label asp-for="Type">Type</label><select asp-for="Type"><option value="Midterm">Midterm</option><option value="Final">Final examination</option></select></div>
             </div>
             <div class="field"><label asp-for="Title">Title (optional)</label><input asp-for="Title" placeholder="Midterm" /></div>
-            <div class="hint" style="margin-bottom:16px"><b>Midterm</b>: teachers enter each student's midterm score. <b>Final</b>: teachers enter the final exam score. The semester total is the midterm plus the final, so the two are created separately, when each is due.<br />Form 3 students have no second-semester examinations; they sit WASSCE instead.</div>
+            <div class="hint" style="margin-bottom:16px"><b>Midterm</b>: teachers enter and save each student's midterm score; it is not sent to the coordinator on its own. <b>Final</b>: teachers enter the final exam score, then send the midterm and final scores to the coordinator together. The semester total is the midterm plus the final, so the two are created separately, when each is due.<br />Form 3 students have no second-semester examinations; they sit WASSCE instead.</div>
             <div class="form-actions"><button class="btn primary">Create</button><a class="btn" asp-action="Index">Cancel</a></div>
         </form>
     </div>

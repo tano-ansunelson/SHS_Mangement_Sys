@@ -7,18 +7,18 @@ using school_management_system.Models.Enums;
 using school_management_system.Service;
 
 namespace school_management_system.Areas.Admin.Controllers;
-public class ClassesController(AppDbContext db, AcademicSetupService setup) : AdminBase(db) 
+public class ClassesController(AppDbContext db, AcademicSetupService setup, StaffContinuityService continuity) : AdminBase(db) 
 {
 
 
     public async Task<IActionResult> Index() =>
-        View(
-            await Db.SchoolClasses.OrderBy(c => c.Course.Name)
-            .ThenBy(c => c.FormLevel).ThenBy(c => c.Group)
+        View(await Db.SchoolClasses.OrderBy(c => c.Course.Name).ThenBy(c => c.FormLevel).ThenBy(c => c.Group)
             .Select(c => new ClassRow(c.Id, c.Course.Name, c.FormLevel, c.Group,
                 Db.ClassSubjects.Count(s => s.SchoolClassId == c.Id),
-                Db.Enrollments.Count(e => e.ClassYear.SchoolClassId == c.Id && e.AcademicYear.IsCurrent && e.Outcome == EnrollmentOutcome.Pending))).ToListAsync());
-
+                Db.Enrollments.Count(e =>
+                e.ClassYear.SchoolClassId == c.Id && 
+                e.AcademicYear.IsCurrent && e.Outcome == EnrollmentOutcome.Pending)))
+            .ToListAsync());
 
 
 
@@ -28,20 +28,23 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ClassVm vm)
     {
-        if (!ModelState.IsValid)
-            return View("Form", await Load(vm));
+        if (!ModelState.IsValid) return View("Form", await Load(vm));
+        var made = 0;
         try
         {
-            await setup.CreateClassAsync(vm.CourseId, vm.FormLevel, vm.Group, vm.SubjectIds);
+            // students keep the same subjects through all three years, so a group is normally created as Forms 1, 2 and 3 together
+            foreach (var level in vm.AllForms ? new[] { 1, 2, 3 } : new[] { vm.FormLevel })
+            {
+                try { await setup.CreateClassAsync(vm.CourseId, level, vm.Group, vm.SubjectIds); made++; }
+                catch (DomainException) when (vm.AllForms && level != vm.FormLevel) { /* that form already exists */ }
+            }
         }
-        catch(DomainException e)
-        {
-            ModelState.AddModelError("", e.Message);
-            return View("Form", await Load(vm));
-        }
-        Flash("Class created.");
+        catch (DomainException e) { ModelState.AddModelError("", e.Message); return View("Form", await Load(vm)); }
+        Flash(made == 1 ? "Class created." : $"{made} classes created (one for each form).");
         return RedirectToAction(nameof(Index));
     }
+
+
 
 
 
@@ -49,9 +52,8 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
     {
         var c = await Db.SchoolClasses.FindAsync(id);
         if (c == null) return NotFound();
-
         var vm = new ClassVm
-        { 
+        {
             Id = c.Id,
             CourseId = c.CourseId,
             FormLevel = c.FormLevel,
@@ -62,23 +64,16 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
     }
 
 
-    [HttpPost,ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(ClassVm vm)
     {
-        if (!await Db.SchoolClasses.AnyAsync(c => c.Id == vm.Id)) 
-            return NotFound();
-        try
-        {
-            await setup.SetClassSubjectsAsync(vm.Id, vm.SubjectIds);
-        }catch(DomainException e)
-        {
-            ModelState.AddModelError("", e.Message); 
-            return View("Form", await Load(vm));
-        }
-
+        if (!await Db.SchoolClasses.AnyAsync(c => c.Id == vm.Id)) return NotFound();
+        try { await setup.SetClassSubjectsAsync(vm.Id, vm.SubjectIds); }
+        catch (DomainException e) { ModelState.AddModelError("", e.Message); return View("Form", await Load(vm)); }
         Flash("Class subjects updated.");
         return RedirectToAction(nameof(Details), new { id = vm.Id });
     }
+
 
 
 
@@ -88,22 +83,17 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
         var c = await Db.SchoolClasses.Include(x => x.Course).SingleOrDefaultAsync(x => x.Id == id);
         if (c == null) return NotFound();
         ViewData["Title"] = ClassLabel(c);
-        var cy = await Db.ClassYears.Include(x => x.CoordinatorTeacher!.User)
-            .SingleOrDefaultAsync(x => x.SchoolClassId == id && x.AcademicYear.IsCurrent);
+        var cy = await Db.ClassYears.Include(x => x.CoordinatorTeacher!.User).SingleOrDefaultAsync(x => x.SchoolClassId == id && x.AcademicYear.IsCurrent);
         ViewData["Class"] = c;
         ViewData["ClassYear"] = cy;
         var cyId = cy?.Id ?? 0;
         ViewData["Subjects"] = await Db.ClassSubjects.Where(s => s.SchoolClassId == id).OrderBy(s => s.Subject.Name)
-          .Select(s => new SubjectTeacherRow(s.Subject.Name, s.Subject.Code,
-              Db.TeachingAssignments.Where(t => t.ClassYearId == cyId
-              && t.SubjectId == s.SubjectId)
-              .Select(t => t.Teacher.User.FullName).FirstOrDefault()))
-          .ToListAsync();
+            .Select(s => new SubjectTeacherRow(s.Subject.Name, s.Subject.Code,
+                Db.TeachingAssignments.Where(t => t.ClassYearId == cyId && t.SubjectId == s.SubjectId).Select(t => t.Teacher.User.FullName).FirstOrDefault()))
+            .ToListAsync();
         ViewData["Students"] = cy == null ? new List<PersonRow>() : await Db.Enrollments.Where(e => e.ClassYearId == cy.Id && e.Outcome == EnrollmentOutcome.Pending)
-           .OrderBy(e => e.Student.User.FullName).Select(e => new PersonRow(e.Id, e.StudentId, e.Student.User.FullName, e.Student.StudentNumber, e.Student.Residence)).ToListAsync();
+            .OrderBy(e => e.Student.User.FullName).Select(e => new PersonRow(e.Id, e.StudentId, e.Student.User.FullName, e.Student.StudentNumber, e.Student.Residence)).ToListAsync();
         ViewBag.Teachers = new SelectList(await Db.Teachers.Where(t => t.IsActive).OrderBy(t => t.User.FullName).Select(t => new { t.Id, t.User.FullName }).ToListAsync(), "Id", "FullName", cy?.CoordinatorTeacherId);
-
-
         return View(c);
     }
 
@@ -112,14 +102,15 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
 
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> SetCoordinator(int clasYearId, int? teacherId)
+    public async Task<IActionResult> SetCoordinator(int classYearId, int? teacherId)
     {
-        var cy = await Db.ClassYears.FindAsync(clasYearId);
+        var cy = await Db.ClassYears.FindAsync(classYearId);
         if (cy == null) return NotFound();
+        var old = cy.CoordinatorTeacherId;
         cy.CoordinatorTeacherId = teacherId;
+        await continuity.OnCoordinatorChangedAsync(cy.Id, old, teacherId);   // later years follow until the admin changes it again
         await Db.SaveChangesAsync();
         Flash(teacherId == null ? "Coordinator removed." : "Coordinator updated.");
-
         return RedirectToAction(nameof(Details), new { id = cy.SchoolClassId });
     }
 
@@ -128,8 +119,11 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup) : Ad
     public async Task<IActionResult> Delete(int id)
     {
         var c = await Db.SchoolClasses.Include(x => x.Course).SingleOrDefaultAsync(x => x.Id == id);
-        return c == null ? NotFound() : Confirm("Delete class", $"Delete{ClassLabel(c)}? only empty classes can be deleted.",
-            Url.Action(nameof(DeleteConfirmed))!, id, Url.Action(nameof(Index))!);
+        return c == null ? NotFound() : 
+            Confirm("Delete class", $"Delete " +
+            $"{ClassLabel(c)}? Only empty classes can be deleted.",
+            Url.Action(nameof(DeleteConfirmed))!,
+            id, Url.Action(nameof(Index))!);
     }
 
     [HttpPost, ValidateAntiForgeryToken]

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using school_management_system.Data;
 using school_management_system.Service;
+using static school_management_system.Service.HallService;
 
 namespace school_management_system.Areas.HallMaster.Controllers;
     public class RoomsController(AppDbContext db, RoomAllocationService rooms) : HallMasterBase(db)

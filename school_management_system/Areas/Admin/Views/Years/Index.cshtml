@@ -19,6 +19,7 @@
                 <span class="badge ok">Current</span>
             }
         </h2><span class="muted small">@y.Classes classes · @y.Students enrollments</span></div>
+        <form method="post" asp-action="SyncClasses" asp-route-id="@y.Id" title="Adds classes created after this year and fills empty coordinator, subject teacher and hall master positions from the year before"><button class="btn sm ghost">Sync classes &amp; staff</button></form>
         @if (!y.IsCurrent)
         {
             <form method="post" asp-action="SetCurrent" asp-route-id="@y.Id" data-confirm="Make @y.Name the current academic year?"><button class="btn sm">Make current</button></form>
@@ -48,7 +49,7 @@
                         @foreach (var a in s.Assessments)
                         {
                             <tr>
-                                <td><b>@a.Title</b><div class="muted small">@(a.Type == AssessmentType.Midterm ? "Teachers enter the midterm score" : "Teachers enter the final exam score") · @a.Results score(s)</div></td>
+                                <td><b>@a.Title</b><div class="muted small">@(a.Type == AssessmentType.Midterm ? "Teachers enter and save the midterm score (sent with the final)" : "Teachers enter the final score, then send midterm + final to the coordinator") · @a.Results score(s)</div></td>
                                 <td><span class="badge @(a.IsOpen ? "ok" : "")">@(a.IsOpen ? "Open" : "Closed")</span></td>
                                 <td class="right nowrap"><form class="inline" method="post" asp-action="ToggleAssessment" asp-route-id="@a.Id"><button class="btn sm">@(a.IsOpen ? "Close" : "Re-open")</button></form> <a class="btn sm link-danger" asp-action="DeleteAssessment" asp-route-id="@a.Id">Delete</a></td>
                             </tr>

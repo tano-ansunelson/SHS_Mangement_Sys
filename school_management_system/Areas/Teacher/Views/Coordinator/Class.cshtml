@@ -18,6 +18,11 @@
         </form>
     </div>
 </div>
+
+
+<partial name="_ResultMatrix" model="Model" />
+
+
 @if (Model == null)
 {
     <div class="card empty">No examinations to show yet.</div>
@@ -37,7 +42,7 @@ else
         </div>
         <div class="card-body flush table-wrap">
             <table class="data">
-                <thead><tr><th>Subject</th><th>Teacher</th><th>Progress</th><th>Status</th><th>Send back</th></tr></thead>
+                <thead><tr><th>Subject</th><th>Teacher</th><th>Scores received</th><th>Status</th><th>Send back</th></tr></thead>
                 <tbody>
                     @foreach (var s in subjects)
                     {
@@ -68,5 +73,5 @@ else
         </table>
     </div>
 </div>
-<partial name="_ResultMatrix" model="Model" />
-} 
+
+}

@@ -2,9 +2,9 @@
 @using school_management_system.Models.Domain
 @model List<EntryProgress>
 @{
-    ViewData["Title"] = "Enter results"; var aid = ViewData["AssessmentId"] as int?;
+    ViewData["Title"] = "Enter results"; var aid = ViewData["AssessmentId"] as int?; var isMidterm = ViewData["IsMidterm"] is true;
 }
-<div class="page-head"><div><h1>Enter results</h1><p>Choose an examination, then open a subject and class to enter scores.</p></div></div>
+<div class="page-head"><div><h1>Enter results</h1><p>Choose an examination, then open a subject and class to enter scores. Midterm scores are saved here; they go to the class coordinator together with the final exam scores.</p></div></div>
 <div class="card">
     <div class="toolbar">
         <form method="get" style="display:flex;gap:10px;align-items:center">
@@ -43,7 +43,7 @@
                             else if (r.Entered > 0)
                             {
 
-                                <span class="badge warn">Draft</span>
+                                <span class="badge warn">@(isMidterm ? "Saved, not sent yet" : "Draft")</span>
                             }
                             else
                             {

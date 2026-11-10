@@ -2,7 +2,7 @@
 @using school_management_system.Service
 @model MatrixVm
 <div class="card">
-    <div class="card-head"><h2>@Model.ClassName</h2><span class="muted">@Model.AssessmentTitle · @(Model.IsFinal ? "final exam score, with the semester total" : "midterm score")</span></div>
+    <div class="card-head"><h2>@Model.ClassName</h2><span class="muted">@Model.AssessmentTitle · @(Model.IsFinal ? "final exam score, with the midterm and the semester total" : "midterm score")</span></div>
     <div class="card-body flush table-wrap">
         @if (Model.Rows.Count == 0)
         {
@@ -26,9 +26,9 @@
                                 {
                                     <td class="num">
                                         <span class="badge @Ui.Status(c.Status)" title="@c.Status">@c.Score.Value.ToString("0.#")</span>
-                                        @if (c.Total != null)
+                                        @if (Model.IsFinal)
                                         {
-                                            <div class="muted small">Total @c.Total.Value.ToString("0.#") · @c.Grade</div>
+                                            <div class="muted small">Midterm @(c.Midterm?.ToString("0.#") ?? "—")@(c.Total != null ? " · Total " + c.Total.Value.ToString("0.#") + " · " + c.Grade : "")</div>
                                         }
                                     </td>
                                 }

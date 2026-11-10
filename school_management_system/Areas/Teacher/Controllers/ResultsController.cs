@@ -15,7 +15,7 @@ public record EntryProgress(int ClassYearId, int SubjectId, string Subject, stri
     public bool Submitted => Entered > 0 && Counts.Keys.All(k => k != ResultStatus.Draft && k != ResultStatus.Returned);
     public bool HasReturned => Counts.ContainsKey(ResultStatus.Returned);
 }
-public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkflowService workflow,  GradingService grading) : TeacherBase(db, q)
+public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkflowService workflow, GradingService grading) : TeacherBase(db, q)
 {
     public async Task<IActionResult> Index(int? assessmentId)
     {
@@ -26,13 +26,15 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
         assessmentId ??= list.Select(a => (int?)a.Id).FirstOrDefault();
         ViewBag.Assessments = new SelectList(list, "Id", "Name", assessmentId);
         ViewData["AssessmentId"] = assessmentId;
+        ViewData["IsMidterm"] = assessmentId != null && await Db.Assessments.AnyAsync(a => a.Id == assessmentId && a.Type == AssessmentType.Midterm);
         var rows = new List<EntryProgress>();
         if (assessmentId != null)
         {
             var sem = await Db.Assessments.Where(a => a.Id == assessmentId).Select(a => a.Semester.Number).FirstAsync();
             var mine = await Db.TeachingAssignments.Where(t => t.TeacherId == TeacherId && t.ClassYear.AcademicYearId == y && !(sem == 2 && t.ClassYear.SchoolClass.FormLevel == 3))
                 .OrderBy(t => t.Subject.Name)
-                .Select(t => new {
+                .Select(t => new
+                {
                     t.ClassYearId,
                     t.SubjectId,
                     Subject = t.Subject.Name,
@@ -68,6 +70,7 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
                 .Select(r => new { r.EnrollmentId, r.ClassScore }).ToListAsync()
             : null;
 
+
         var vm = new EntryVm
         {
             ClassYearId = classYearId,
@@ -101,10 +104,6 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
     }
 
 
-
-
-
-
     /// <summary>Saves every row where at least one score was typed. A class score can be saved before the exam score
     /// (and the other way round); the total and grade appear once both are in.</summary>
     [HttpPost, ValidateAntiForgeryToken]
@@ -127,9 +126,6 @@ public class ResultsController(AppDbContext db, DashboardQueries q, ResultWorkfl
         await Run(() => workflow.SubmitAsync(TeacherId, classYearId, subjectId, assessmentId, UserId), "Results submitted to the class coordinator.");
         return RedirectToAction(nameof(Entry), new { classYearId, subjectId, assessmentId });
     }
-
-
-
 
 
 }
