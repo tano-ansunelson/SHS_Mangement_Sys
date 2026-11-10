@@ -7,10 +7,10 @@ using school_management_system.Service;
 
 namespace school_management_system.Areas.Admin.Controllers;
 
-public record ClassProgress(int ClassYearId, string Name, int Students, int Subjects, Dictionary<ResultStatus, int> Counts)
+public record ClassProgress(int ClassYearId, string Name, int Students, int Subjects, Dictionary<ResultStatus, int> Counts, int GroupSize = 1)
 {
     public int Total => Counts.Values.Sum();
-    public int Expected => Students * Subjects;
+    public int Expected => Students * Subjects * GroupSize;
     public int Of(ResultStatus s) => Counts.GetValueOrDefault(s);
     public bool CanApprove => Expected > 0 && Of(ResultStatus.Reviewed) == Expected;
     public bool CanPublish => Expected > 0 && Of(ResultStatus.Approved) == Expected;
@@ -20,36 +20,34 @@ public class ResultsController(AppDbContext db, ResultWorkflowService workflow, 
     public async Task<IActionResult> Index(int? assessmentId)
     {
         var y = await CurrentYearIdAsync();
-        var list = await Db.Assessments.Where(a => a.Semester.AcademicYearId == y)
-            .OrderBy(a => a.Semester.Number)
-            .ThenBy(a => a.Type)
-            .Select(a => new { a.Id, Name = "Semester" + a.Semester.Number + " . " + a.Title }).ToListAsync();
+        // only final exams are listed: approving or publishing a final also covers the same semester's midterm scores
+        var list = await Db.Assessments.Where(a => a.Semester.AcademicYearId == y && a.Type == AssessmentType.Final).OrderBy(a => a.Semester.Number)
+            .Select(a => new { a.Id, Name = "Semester " + a.Semester.Number + " · " + a.Title + " (with midterm)" }).ToListAsync();
         ViewBag.Assessments = new SelectList(list, "Id", "Name", assessmentId);
         ViewData["AssessmentId"] = assessmentId;
         var rows = new List<ClassProgress>();
-
         if (assessmentId != null)
         {
-            var sem = await Db.Assessments.Where(a => a.Id == assessmentId).Select(a => a.Semester.Number).FirstAsync();
+            var picked = await Db.Assessments.Where(a => a.Id == assessmentId).Select(a => new { a.Semester.Number, a.SemesterId }).FirstAsync();
+            var sem = picked.Number;
+            var groupIds = await Db.Assessments.Where(a => a.SemesterId == picked.SemesterId && (a.Id == assessmentId || a.Type == AssessmentType.Midterm)).Select(a => a.Id).ToListAsync();
             var cys = await Db.ClassYears.Where(c => c.AcademicYearId == y && !(sem == 2 && c.SchoolClass.FormLevel == 3))
                 .OrderBy(c => c.SchoolClass.Course.Name).ThenBy(c => c.SchoolClass.FormLevel).ThenBy(c => c.SchoolClass.Group)
                 .Select(c => new
                 {
                     c.Id,
-                    Name = "Form" + c.SchoolClass.FormLevel + " " + c.SchoolClass.Course.Name + " " + c.SchoolClass.Group,
+                    Name = "Form " + c.SchoolClass.FormLevel + " " + c.SchoolClass.Course.Name + " " + c.SchoolClass.Group,
                     Students = Db.Enrollments.Count(e => e.ClassYearId == c.Id && e.Outcome == EnrollmentOutcome.Pending && e.Student.Status == StudentStatus.Active),
                     Subjects = Db.ClassSubjects.Count(s => s.SchoolClassId == c.SchoolClassId)
-
                 }).ToListAsync();
-
-            var stats = await Db.Results.Where(r => r.AssessmentId == assessmentId)
-              .GroupBy(r => new { r.Enrollment.ClassYearId, r.Status }).Select(g => new { g.Key.ClassYearId, g.Key.Status, N = g.Count() }).ToListAsync();
+            var stats = await Db.Results.Where(r => groupIds.Contains(r.AssessmentId))
+                .GroupBy(r => new { r.Enrollment.ClassYearId, r.Status }).Select(g => new { g.Key.ClassYearId, g.Key.Status, N = g.Count() }).ToListAsync();
             foreach (var c in cys)
-                rows.Add(new ClassProgress(c.Id, c.Name, c.Students, c.Subjects, stats.Where(s => s.ClassYearId == c.Id).ToDictionary(s => s.Status, s => s.N)));
-
+                rows.Add(new ClassProgress(c.Id, c.Name, c.Students, c.Subjects, stats.Where(s => s.ClassYearId == c.Id).GroupBy(s => s.Status).ToDictionary(g => g.Key, g => g.Sum(x => x.N)), groupIds.Count));
         }
         return View(rows);
     }
+
 
 
     public async Task<IActionResult> Class(int classYearId, int assessmentId)

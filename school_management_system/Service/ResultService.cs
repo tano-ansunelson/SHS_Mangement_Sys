@@ -84,12 +84,18 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
     {
         if (!await db.TeachingAssignments.AnyAsync(t => t.TeacherId == teacherId && t.SubjectId == subjectId && t.ClassYearId == classYearId))
             throw new DomainException("You are not assigned to this subject and class.");
+        var g = await GroupAsync(assessmentId);
+        if (g.Type == AssessmentType.Midterm)
+            throw new DomainException("Midterm scores are not sent on their own. They are submitted together with the final exam scores.");
 
-        var type = await db.Assessments.Where(a => a.Id == assessmentId).Select(a => a.Type).SingleAsync();
         var expected = await ActiveEnrollments(classYearId).CountAsync();
-        var rs = await db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && r.SubjectId == subjectId && r.AssessmentId == assessmentId).ToListAsync();
-        var scored = rs.Count(r => (type == AssessmentType.Midterm ? r.ClassScore : r.ExamScore) != null);
-        if (scored < expected) throw new DomainException($"Scores are missing for {expected - scored} student(s).");
+        var rs = await db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && r.SubjectId == subjectId && g.GroupIds.Contains(r.AssessmentId)).ToListAsync();
+        var finals = rs.Count(r => r.AssessmentId == assessmentId && r.ExamScore != null);
+        var midterms = rs.Count(r => r.AssessmentId != assessmentId && r.ClassScore != null);
+        if (g.GroupIds.Count > 1 && midterms < expected)
+            throw new DomainException($"Midterm scores are missing for {expected - midterms} student(s). Midterm and final scores are sent together, so enter the midterm scores first.");
+        if (finals < expected) throw new DomainException($"Final exam scores are missing for {expected - finals} student(s).");
+
         var open = rs.Where(r => r.Status is ResultStatus.Draft or ResultStatus.Returned).ToList();
         if (open.Count == 0) throw new DomainException("Nothing to submit.");
         await MoveAsync(open, ResultStatus.Submitted, actorUserId);
@@ -101,37 +107,33 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
     public async Task ReturnAsync(int coordinatorTeacherId, int classYearId, int subjectId, int assessmentId, string note, string actorUserId)
     {
         await EnsureCoordinatorAsync(coordinatorTeacherId, classYearId);
-        var rs = await db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && r.SubjectId == subjectId
-                                              && r.AssessmentId == assessmentId && r.Status == ResultStatus.Submitted).ToListAsync();
+        var (rows, _) = await GroupResultsAsync(classYearId, assessmentId);
+        var rs = rows.Where(r => r.SubjectId == subjectId && r.Status == ResultStatus.Submitted).ToList();
         if (rs.Count == 0) throw new DomainException("No submitted results to return.");
-        await MoveAsync(rs, ResultStatus.Returned, actorUserId, note);
+        await MoveAsync(rs, ResultStatus.Returned, actorUserId, note);   // midterm and final both go back so the teacher can fix either
     }
 
-
-    /// <summary>Coordinator confirms the whole class (all subjects) and sends it to admin.</summary>
-    /// <summary>Coordinator confirms the whole class (all subjects) and sends it to admin.</summary>
+    /// <summary>Coordinator confirms the whole class (all subjects, midterm and final) and sends it to admin.</summary>
     public async Task ReviewAsync(int coordinatorTeacherId, int classYearId, int assessmentId, string actorUserId)
     {
         await EnsureCoordinatorAsync(coordinatorTeacherId, classYearId);
-        var rs = await ClassResults(classYearId, assessmentId).ToListAsync();
-        await EnsureCompleteAsync(classYearId, rs, ResultStatus.Submitted, "submitted by every subject teacher");
+        var (rs, size) = await GroupResultsAsync(classYearId, assessmentId);
+        await EnsureCompleteAsync(classYearId, rs, size, ResultStatus.Submitted, "submitted by every subject teacher");
         await MoveAsync(rs, ResultStatus.Reviewed, actorUserId);
     }
 
     // ---------- Admin ----------
     public async Task ApproveAsync(int classYearId, int assessmentId, string adminUserId)
     {
-        var rs = await ClassResults(classYearId, assessmentId).ToListAsync();
-        await EnsureCompleteAsync(classYearId, rs, ResultStatus.Reviewed, "reviewed by the coordinator");
+        var (rs, size) = await GroupResultsAsync(classYearId, assessmentId);
+        await EnsureCompleteAsync(classYearId, rs, size, ResultStatus.Reviewed, "reviewed by the coordinator");
         await MoveAsync(rs, ResultStatus.Approved, adminUserId);
     }
 
-
-
-    /// <summary>Only now can students see this exam's scores.</summary>
+    /// <summary>Only now can students see the semester's midterm and final scores.</summary>
     public async Task PublishAsync(int classYearId, int assessmentId, string adminUserId)
     {
-        var rs = await ClassResults(classYearId, assessmentId).ToListAsync();
+        var (rs, _) = await GroupResultsAsync(classYearId, assessmentId);
         if (rs.Count == 0 || rs.Any(r => r.Status != ResultStatus.Approved))
             throw new DomainException("All results must be approved before publishing.");
         await MoveAsync(rs, ResultStatus.Published, adminUserId);
@@ -176,9 +178,36 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
 
 
 
+
     // ---------- helpers ----------
     private IQueryable<Enrollment> ActiveEnrollments(int classYearId) =>
         db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome == EnrollmentOutcome.Pending && e.Student.Status == StudentStatus.Active);
+
+
+    /// <summary>The final exam plus the same semester's midterm (when one exists). Both move through the workflow as one.</summary>
+    private async Task<(AssessmentType Type, int SemesterId, List<int> GroupIds)> GroupAsync(int assessmentId)
+    {
+        var a = await db.Assessments.Where(x => x.Id == assessmentId).Select(x => new { x.Type, x.SemesterId }).SingleOrDefaultAsync()
+                ?? throw new DomainException("Assessment not found.");
+        var ids = await db.Assessments.Where(x => x.SemesterId == a.SemesterId && (x.Id == assessmentId || x.Type == AssessmentType.Midterm))
+            .Select(x => x.Id).ToListAsync();
+        return (a.Type, a.SemesterId, ids);
+    }
+
+
+
+    private async Task<(List<Result> Rows, int GroupSize)> GroupResultsAsync(int classYearId, int assessmentId)
+    {
+        var g = await GroupAsync(assessmentId);
+        if (g.Type == AssessmentType.Midterm)
+            throw new DomainException("A midterm is reviewed, approved and published together with the final exam of the same semester. Choose the final exam.");
+        var rows = await db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && g.GroupIds.Contains(r.AssessmentId)).ToListAsync();
+        return (rows, g.GroupIds.Count);
+    }
+
+
+
+
 
     private IQueryable<Result> ClassResults(int classYearId, int assessmentId) =>
         db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && r.AssessmentId == assessmentId);
@@ -189,13 +218,13 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
             throw new DomainException("You are not the coordinator of this class.");
     }
 
-    private async Task EnsureCompleteAsync(int classYearId, List<Result> rs, ResultStatus required, string what)
+    private async Task EnsureCompleteAsync(int classYearId, List<Result> rs, int groupSize, ResultStatus required, string what)
     {
         var students = await ActiveEnrollments(classYearId).CountAsync();
         var classSubjects = await db.ClassYears.Where(c => c.Id == classYearId)
             .Select(c => db.ClassSubjects.Count(s => s.SchoolClassId == c.SchoolClassId)).SingleAsync();
-        if (rs.Count != students * classSubjects || rs.Any(r => r.Status != required))
-            throw new DomainException($"Every subject's results must be {what} first.");
+        if (rs.Count != students * classSubjects * groupSize || rs.Any(r => r.Status != required))
+            throw new DomainException($"Every subject's midterm and final scores must be {what} first.");
     }
 
 

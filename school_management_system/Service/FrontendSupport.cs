@@ -7,9 +7,10 @@ using school_management_system.Models.Enums;
 using System.Security.Claims;
 
 namespace school_management_system.Service;
-    public class AppClaimsFactory(UserManager<ApplicationUser> um, RoleManager<IdentityRole> rm, IOptions<IdentityOptions> o)
-    :UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>(um,rm,o)
-    {
+
+public class AppClaimsFactory(UserManager<ApplicationUser> um, RoleManager<IdentityRole> rm, IOptions<IdentityOptions> o)
+: UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>(um, rm, o)
+{
 
     protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user)
     {
@@ -41,7 +42,7 @@ public class AccountAdminService(UserManager<ApplicationUser> users)
 
 public record SubjectRef(int Id, string Name);
 /// <summary>One student's score for one subject in the selected exam. On a final, Total and Grade add the semester's midterm.</summary>
-public record MatrixCell(decimal? Score, decimal? Total, string Grade, ResultStatus Status);
+public record MatrixCell(decimal? Score, decimal? Midterm, decimal? Total, string Grade, ResultStatus Status);
 
 public class MatrixRow
 {
@@ -51,7 +52,7 @@ public class MatrixRow
     public Dictionary<int, MatrixCell> Cells { get; set; } = new();
     public decimal? Average { get; set; }
 }
-    public class MatrixVm
+public class MatrixVm
 {
     public int ClassYearId { get; set; }
     public int AssessmentId { get; set; }
@@ -67,7 +68,7 @@ public class MatrixService(AppDbContext db, GradingService grading)
     public async Task<MatrixVm> BuildAsync(int classYearId, int assessmentId)
     {
         var cy = await db.ClassYears.Include(c => c.SchoolClass).ThenInclude(s => s.Course)
-                      .SingleOrDefaultAsync(c => c.Id == classYearId) ?? throw new DomainException("Class not found.");
+                   .SingleOrDefaultAsync(c => c.Id == classYearId) ?? throw new DomainException("Class not found.");
         var asm = await db.Assessments.Include(a => a.Semester).SingleOrDefaultAsync(a => a.Id == assessmentId)
                   ?? throw new DomainException("Assessment not found.");
         var isFinal = asm.Type == AssessmentType.Final;
@@ -80,7 +81,7 @@ public class MatrixService(AppDbContext db, GradingService grading)
             AssessmentTitle = $"Semester {asm.Semester.Number} · {asm.Title}"
         };
         vm.Subjects = await db.ClassSubjects.Where(s => s.SchoolClassId == cy.SchoolClassId)
-             .OrderBy(s => s.Subject.Name).Select(s => new SubjectRef(s.SubjectId, s.Subject.Name)).ToListAsync();
+          .OrderBy(s => s.Subject.Name).Select(s => new SubjectRef(s.SubjectId, s.Subject.Name)).ToListAsync();
         var students = await db.Enrollments.Where(e => e.ClassYearId == classYearId)
             .OrderBy(e => e.Student.User.FullName)
             .Select(e => new { e.Id, Name = e.Student.User.FullName, Number = e.Student.StudentNumber }).ToListAsync();
@@ -99,13 +100,13 @@ public class MatrixService(AppDbContext db, GradingService grading)
             foreach (var r in results.Where(x => x.EnrollmentId == s.Id))
             {
                 var score = isFinal ? r.ExamScore : r.ClassScore;
-                decimal? total = null; var grade = "";
-                if (isFinal && score != null)
+                decimal? total = null, mid = null; var grade = "";
+                if (isFinal)
                 {
-                    var mid = midterms!.FirstOrDefault(m => m.EnrollmentId == s.Id && m.SubjectId == r.SubjectId)?.ClassScore;
-                    if (mid != null) { total = mid + score; grade = GradingService.GradeFor(boundaries, total.Value); }
+                    mid = midterms!.FirstOrDefault(m => m.EnrollmentId == s.Id && m.SubjectId == r.SubjectId)?.ClassScore;
+                    if (mid != null && score != null) { total = mid + score; grade = GradingService.GradeFor(boundaries, total.Value); }
                 }
-                row.Cells[r.SubjectId] = new MatrixCell(score, total, grade, r.Status);
+                row.Cells[r.SubjectId] = new MatrixCell(score, mid, total, grade, r.Status);
             }
             var numbers = row.Cells.Values.Select(c => c.Total ?? c.Score).Where(v => v != null).Select(v => v!.Value).ToList();
             row.Average = numbers.Count == 0 ? null : Math.Round(numbers.Average(), 1);

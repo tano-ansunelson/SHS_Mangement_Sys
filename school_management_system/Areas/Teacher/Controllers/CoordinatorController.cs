@@ -28,20 +28,23 @@ public class CoordinatorController(AppDbContext db, DashboardQueries q, ResultWo
         ViewData["ClassName"] = ClassLabel(cy.SchoolClass);
         ViewData["ClassYearId"] = classYearId;
 
-        var list = await Db.Assessments.Where(a => a.Semester.AcademicYearId == cy.AcademicYearId && !(a.Semester.Number == 2 && cy.SchoolClass.FormLevel == 3))
-            .OrderBy(a => a.Semester.Number).ThenBy(a => a.Type).Select(a => new { a.Id, Name = "Semester " + a.Semester.Number + " · " + a.Title }).ToListAsync();
+        // the coordinator receives a semester once the final is in: the final carries the midterm scores with it
+        var list = await Db.Assessments.Where(a => a.Semester.AcademicYearId == cy.AcademicYearId && a.Type == AssessmentType.Final && !(a.Semester.Number == 2 && cy.SchoolClass.FormLevel == 3))
+            .OrderBy(a => a.Semester.Number).Select(a => new { a.Id, Name = "Semester " + a.Semester.Number + " · " + a.Title + " (with midterm)" }).ToListAsync();
         assessmentId ??= list.Select(a => (int?)a.Id).FirstOrDefault();
         ViewBag.Assessments = new SelectList(list, "Id", "Name", assessmentId);
         ViewData["AssessmentId"] = assessmentId;
         if (assessmentId == null) return View((MatrixVm?)null);
 
         var students = await Db.Enrollments.CountAsync(e => e.ClassYearId == classYearId && e.Outcome == EnrollmentOutcome.Pending && e.Student.Status == StudentStatus.Active);
-        var stats = await Db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && r.AssessmentId == assessmentId)
+        var semesterId = await Db.Assessments.Where(a => a.Id == assessmentId).Select(a => a.SemesterId).FirstAsync();
+        var groupIds = await Db.Assessments.Where(a => a.SemesterId == semesterId && (a.Id == assessmentId || a.Type == AssessmentType.Midterm)).Select(a => a.Id).ToListAsync();
+        var stats = await Db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && groupIds.Contains(r.AssessmentId))
             .GroupBy(r => new { r.SubjectId, r.Status }).Select(g => new { g.Key.SubjectId, g.Key.Status, N = g.Count() }).ToListAsync();
         ViewData["Subjects"] = await Db.ClassSubjects.Where(s => s.SchoolClassId == cy.SchoolClassId).OrderBy(s => s.Subject.Name)
             .Select(s => new { s.SubjectId, s.Subject.Name, Teacher = Db.TeachingAssignments.Where(t => t.ClassYearId == classYearId && t.SubjectId == s.SubjectId).Select(t => t.Teacher.User.FullName).FirstOrDefault() })
             .ToListAsync()
-            .ContinueWith(t => t.Result.Select(s => new SubjectStatus(s.SubjectId, s.Name, s.Teacher, students,
+            .ContinueWith(t => t.Result.Select(s => new SubjectStatus(s.SubjectId, s.Name, s.Teacher, students * groupIds.Count,
                 stats.Where(x => x.SubjectId == s.SubjectId).ToDictionary(x => x.Status, x => x.N))).ToList());
         return View(await matrix.BuildAsync(classYearId, assessmentId.Value));
     }
@@ -70,7 +73,8 @@ public class CoordinatorController(AppDbContext db, DashboardQueries q, ResultWo
         ViewData["ClassYearId"] = classYearId; ViewData["ClassName"] = ClassLabel(cy.SchoolClass); ViewData["Form"] = cy.SchoolClass.FormLevel;
         var students = await Db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome == EnrollmentOutcome.Pending && e.Student.Status == StudentStatus.Active)
             .OrderBy(e => e.Student.User.FullName)
-            .Select(e => new {
+            .Select(e => new
+            {
                 e.Id,
                 Name = e.Student.User.FullName,
                 Number = e.Student.StudentNumber,
@@ -84,6 +88,7 @@ public class CoordinatorController(AppDbContext db, DashboardQueries q, ResultWo
         ViewData["Note"] = await Db.PromotionRecommendations.Where(p => p.Enrollment.ClassYearId == classYearId && p.AdminDecision == AdminDecision.Rejected).Select(p => p.AdminNote).FirstOrDefaultAsync();
         return View(rows);
     }
+
 
 
 
