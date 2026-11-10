@@ -18,6 +18,11 @@
         </form>
     </div>
 </div>
+
+
+<partial name="_ResultMatrix" model="Model" />
+
+
 @if (Model == null)
 {
     <div class="card empty">No examinations to show yet.</div>
@@ -68,5 +73,5 @@ else
         </table>
     </div>
 </div>
-<partial name="_ResultMatrix" model="Model" />
+
 }
