@@ -3,6 +3,7 @@ using school_management_system.Data;
 using school_management_system.Models;
 using school_management_system.Models.Domain;
 using Microsoft.EntityFrameworkCore;
+using static school_management_system.Models.Domain.AdminDashVm;
 
 namespace school_management_system.Areas.Admin.Controllers;
 

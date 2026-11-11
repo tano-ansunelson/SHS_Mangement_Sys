@@ -1,16 +1,17 @@
 ﻿using school_management_system.Models.Enums;
 
 namespace school_management_system.Models.Domain;
-    public static class Ui
-    {
+
+public static class Ui
+{
 
     public static string Status(ResultStatus s) => s switch
     {
         ResultStatus.Draft => "",
         ResultStatus.Submitted => "info",
-        ResultStatus.Returned=> "bad",
+        ResultStatus.Returned => "bad",
         ResultStatus.Reviewed => "warn",
-            _ => "ok"
+        _ => "ok"
 
     };
 
@@ -19,11 +20,12 @@ namespace school_management_system.Models.Domain;
         EnrollmentOutcome.Promoted or EnrollmentOutcome.Graduated => "ok",
         EnrollmentOutcome.Repeated => "warn",
         EnrollmentOutcome.Withdrawn => "bad",
-            _ => "info"
+        _ => "info"
     };
-
-
+    public static string Greeting() => DateTime.Now.Hour switch { < 12 => "Good morning", < 17 => "Good afternoon", _ => "Good evening" };
+    public static string Tint(int i) => $"var(--c{i % 6 + 1})";
+    public static string Initials(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "?" : string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpper(p[0])));
     public static string Pct(int part, int whole) => whole == 0 ? "0" : Math.Min(100, part * 100 / whole).ToString();
-
-    }
+}
 

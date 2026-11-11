@@ -54,9 +54,11 @@ else
                                 <span class="badge @Ui.Status(kv.Key)">@kv.Key @kv.Value</span>
                             }
                             @if (!s.Counts.Any())
+
                             {
                                 <span class="muted">Nothing entered</span>
                             }
+
                         </td>
                         <td>
                             @if (s.Counts.ContainsKey(ResultStatus.Submitted))

@@ -1,5 +1,6 @@
 ﻿@using school_management_system.Models.Domain
 @using school_management_system.Models.Enums
+@using static school_management_system.Models.Domain.AdminDashVm
 @model StudentVm
 @{
     var edit = Model.Id != 0; ViewData["Title"] = edit ? "Edit student" : "Add new student";
