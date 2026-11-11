@@ -4,8 +4,9 @@ using school_management_system.Models;
 using school_management_system.Models.Enums;
 
 namespace school_management_system.Data;
-    public static class DbSeeder
-    {
+
+public static class DbSeeder
+{
 
     public static async Task SeedAsync(IServiceProvider sp)
     {
@@ -35,12 +36,18 @@ namespace school_management_system.Data;
             if (res.Succeeded) await users.AddToRoleAsync(admin, Roles.Admin);
         }
 
+        // ---------- courses ----------
+        const string Arts = "General Arts", Science = "General Science", Visual = "Visual Arts",
+                     Business = "Business", Home = "Home Economics";
+        var everyCourse = new[] { Arts, Science, Visual, Business, Home };
+
         if (!await db.Courses.AnyAsync())
         {
-            foreach (var n in new[] { "General Arts", "General Science", "Visual Arts", "Business", "Home Economics" })
-                db.Courses.Add(new Course { Name = n });
+            foreach (var n in everyCourse) db.Courses.Add(new Course { Name = n });
+            await db.SaveChangesAsync();    // the courses must exist before subjects are linked to them
         }
 
+        // ---------- grade scale ----------
         if (!await db.GradeBoundaries.AnyAsync())
         {
             // WASSCE-style scale; adjust in the admin settings screen later.
@@ -53,6 +60,68 @@ namespace school_management_system.Data;
             foreach (var (min, grade, remark) in scale)
                 db.GradeBoundaries.Add(new GradeBoundary { MinScore = min, Grade = grade, Remark = remark });
         }
+
+        // ---------- subjects, and which courses take them ----------
+        var catalogue = new (string Code, string Name, string[] Courses)[]
+        {
+            // core subjects: every course
+            ("COR101", "Core Mathematics", everyCourse),
+            ("COR102", "English Language", everyCourse),
+            ("COR103", "Integrated Science", everyCourse),
+            ("COR104", "Social Studies", everyCourse),
+            ("COR105", "Information & Communications Technology", everyCourse),
+
+            // General Science
+            ("SCI101", "Elective Mathematics", new[] { Science }),
+            ("SCI102", "Biology", new[] { Science }),
+            ("SCI103", "Chemistry", new[] { Science }),
+            ("SCI104", "Physics", new[] { Science }),
+
+            // Business
+            ("BUS101", "Financial Accounting", new[] { Business }),
+            ("BUS102", "Cost Accounting", new[] { Business }),
+            ("BUS103", "Business Management", new[] { Business }),
+            ("BUS104", "Economics", new[] { Business }),
+
+            // General Arts
+            ("ART101", "Literature in English", new[] { Arts }),
+            ("ART102", "Government", new[] { Arts }),
+            ("ART103", "History", new[] { Arts }),
+            ("ART104", "Geography", new[] { Arts }),
+            ("ART105", "French", new[] { Arts }),
+            ("ART106", "Ghanaian Language", new[] { Arts }),
+
+            // Home Economics
+            ("HEC101", "Food and Nutrition", new[] { Home }),
+            ("HEC102", "Management in Living", new[] { Home }),
+            ("HEC103", "Clothing and Textiles", new[] { Home }),
+
+            // Visual Arts
+            ("VAR101", "General Knowledge in Art", new[] { Visual }),
+            ("VAR102", "Graphic Design", new[] { Visual }),
+            ("VAR103", "Sculpture", new[] { Visual }),
+            ("VAR104", "Ceramics", new[] { Visual }),
+        };
+
+        var courses = await db.Courses.ToDictionaryAsync(c => c.Name);
+        var subjects = await db.Subjects.ToDictionaryAsync(s => s.Code);
+        var linked = (await db.CourseSubjects.Select(x => new { x.CourseId, x.SubjectId }).ToListAsync())
+            .Select(x => (x.CourseId, x.SubjectId)).ToHashSet();
+
+        foreach (var (code, name, forCourses) in catalogue)
+        {
+            if (!subjects.TryGetValue(code, out var subject))
+            {
+                subject = new Subject { Code = code, Name = name };
+                db.Subjects.Add(subject);
+                subjects[code] = subject;
+            }
+            foreach (var courseName in forCourses)
+                if (courses.TryGetValue(courseName, out var course) &&
+                    (subject.Id == 0 || !linked.Contains((course.Id, subject.Id))))
+                    db.CourseSubjects.Add(new CourseSubject { Course = course, Subject = subject });
+        }
+
         await db.SaveChangesAsync();
     }
 

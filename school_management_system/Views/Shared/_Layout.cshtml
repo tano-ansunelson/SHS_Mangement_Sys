@@ -40,15 +40,10 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
+    <partial name="_Icons" />
     <div class="app">
         <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-mark">S</div>
-                <div>
-                    <strong>Scholar SHS</strong>
-                    <small>@portal Portal</small>
-                </div>
-            </div>
+            <div class="brand"><div class="brand-mark">S</div><div><strong>Scholar SHS</strong><small>@portal Portal</small></div></div>
             <nav class="nav">
                 @foreach (var m in menu)
                 {
@@ -80,10 +75,7 @@
             }
             <div class="side-foot">
                 <div class="avatar">@initials</div>
-                <div class="who">
-                    <b>@fullName</b>
-                    <a class="small" asp-controller="Account" asp-action="ChangePassword">Change password</a>
-                </div>
+                <div class="who"><b>@fullName</b><a class="small" asp-controller="Account" asp-action="ChangePassword">Change password</a></div>
                 <form asp-controller="Account" asp-action="Logout" asp-area="" method="post"><button class="btn sm ghost" title="Sign out">Exit</button></form>
             </div>
         </aside>
@@ -107,3 +99,4 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+

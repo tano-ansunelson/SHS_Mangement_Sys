@@ -5,6 +5,7 @@ using school_management_system.Data;
 using school_management_system.Models.Domain;
 using school_management_system.Models.Enums;
 using school_management_system.Service;
+using static school_management_system.Models.Domain.AdminDashVm;
 
 namespace school_management_system.Areas.Admin.Controllers;
 
@@ -44,7 +45,7 @@ public class YearsController(AppDbContext db, AcademicSetupService setup) : Admi
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> SetCurrent(int id)
     {
-        await Run(() => setup.SetCurrentYearAsync(id), 
+        await Run(() => setup.SetCurrentYearAsync(id),
             "Current academic year changed.");
         return RedirectToAction(nameof(Index));
     }
@@ -54,7 +55,7 @@ public class YearsController(AppDbContext db, AcademicSetupService setup) : Admi
     {
         (int Classes, int Carried) result = default;
         if (await Run(async () => result = await setup.SyncClassesAsync(id)))
-            Flash(result.Classes == 0 && result.Carried == 0 ? 
+            Flash(result.Classes == 0 && result.Carried == 0 ?
                 "Nothing to add: every class and staff position is already filled for this year."
                 : $"Added {result.Classes} class(es) and carried over {result.Carried}" +
                 $" coordinator, teacher or hall master assignment(s) from the year before.");

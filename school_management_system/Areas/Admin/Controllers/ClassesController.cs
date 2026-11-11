@@ -5,9 +5,11 @@ using school_management_system.Data;
 using school_management_system.Models.Domain;
 using school_management_system.Models.Enums;
 using school_management_system.Service;
+using static school_management_system.Models.Domain.AdminDashVm;
 
 namespace school_management_system.Areas.Admin.Controllers;
-public class ClassesController(AppDbContext db, AcademicSetupService setup, StaffContinuityService continuity) : AdminBase(db) 
+
+public class ClassesController(AppDbContext db, AcademicSetupService setup, StaffContinuityService continuity) : AdminBase(db)
 {
 
 
@@ -16,7 +18,7 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup, Staf
             .Select(c => new ClassRow(c.Id, c.Course.Name, c.FormLevel, c.Group,
                 Db.ClassSubjects.Count(s => s.SchoolClassId == c.Id),
                 Db.Enrollments.Count(e =>
-                e.ClassYear.SchoolClassId == c.Id && 
+                e.ClassYear.SchoolClassId == c.Id &&
                 e.AcademicYear.IsCurrent && e.Outcome == EnrollmentOutcome.Pending)))
             .ToListAsync());
 
@@ -119,7 +121,7 @@ public class ClassesController(AppDbContext db, AcademicSetupService setup, Staf
     public async Task<IActionResult> Delete(int id)
     {
         var c = await Db.SchoolClasses.Include(x => x.Course).SingleOrDefaultAsync(x => x.Id == id);
-        return c == null ? NotFound() : 
+        return c == null ? NotFound() :
             Confirm("Delete class", $"Delete " +
             $"{ClassLabel(c)}? Only empty classes can be deleted.",
             Url.Action(nameof(DeleteConfirmed))!,

@@ -5,6 +5,7 @@ using school_management_system.Data;
 using school_management_system.Models.Domain;
 using school_management_system.Models.Enums;
 using school_management_system.Service;
+using static school_management_system.Models.Domain.AdminDashVm;
 using static school_management_system.Service.HallService;
 namespace school_management_system.Areas.Admin.Controllers;
 
