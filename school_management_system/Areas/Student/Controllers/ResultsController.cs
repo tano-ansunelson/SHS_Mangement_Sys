@@ -11,6 +11,8 @@ public class ResultsController(AppDbContext db, ResultWorkflowService workflow) 
         ViewData["Title"] = "My results";
 
         var all = await workflow.GetPublishedForStudentAsync(StudentId);
+
+
         var years = all.Select(r => r.AcademicYear).Distinct().OrderByDescending(y => y).ToList();
         var chosenYear = !string.IsNullOrEmpty(year) ? year : years.FirstOrDefault();
 
@@ -19,6 +21,7 @@ public class ResultsController(AppDbContext db, ResultWorkflowService workflow) 
         ViewData["Years"] = years;
         ViewData["Year"] = chosenYear;
         ViewData["Semester"] = chosenSemester;
+        ViewData["Positions"] = await workflow.GetPublishedPositionsAsync(StudentId);// only for semesters the admin has published
 
         return View(all.Where(r => r.AcademicYear == chosenYear && r.Semester == chosenSemester).ToList());
     }

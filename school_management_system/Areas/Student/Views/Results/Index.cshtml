@@ -1,9 +1,17 @@
-﻿@model List<SemesterResultRow>
-<div class="page-head"><div><h1>My results</h1><p>Only results released by the school appear here. The semester total is your midterm score plus your final exam score.</p></div><div class="actions"><button class="btn" onclick="window.print()">Print</button></div></div>
+﻿@using school_management_system.Models.Domain
+@model List<SemesterResultRow>
+<div class="page-head">
+    <div>
+        <h1>My results</h1>
+        <p>Only results released by the school appear here. The semester total is your midterm score plus your final exam score.</p>
+    </div>
+    <div class="actions">
+        <button class="btn" onclick="window.print()">Print</button>
+    </div>
+</div>
 @{
-    var years = (List<string>)ViewData["Years"]!;
-    var pickedYear = ViewData["Year"] as string;
-    var pickedSem = ViewData["Semester"] as int? ?? 1;
+    var positions = ViewData["Positions"] as List<PositionInfo> ?? new();
+    var years = (List<string>)ViewData["Years"]!; var pickedYear = ViewData["Year"] as string; var pickedSem = ViewData["Semester"] as int? ?? 1;
 }
 @if (years.Any())
 {
@@ -11,15 +19,17 @@
         <div class="toolbar">
             <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                 <label>Academic year</label>
-                <select name="year" data-autosubmit>@foreach (var y in years) {
-                    <option value="@y" selected="@(y == pickedYear)">@y</option>
-                }
-            </select>
-            <label>Semester</label>
-            <select name="semester" data-autosubmit><option value="1" selected="@(pickedSem == 1)">Semester 1</option><option value="2" selected="@(pickedSem == 2)">Semester 2</option></select>
-        </form>
+                <select name="year" data-autosubmit>
+                    @foreach (var y in years)
+                    {
+                        <option value="@y" selected="@(y == pickedYear)">@y</option>
+                    }
+                </select>
+                <label>Semester</label>
+                <select name="semester" data-autosubmit><option value="1" selected="@(pickedSem == 1)">Semester 1</option><option value="2" selected="@(pickedSem == 2)">Semester 2</option></select>
+            </form>
+        </div>
     </div>
-</div>
 }
 @if (!years.Any())
 {
@@ -37,12 +47,17 @@ else if (!Model.Any())
         @foreach (var sem in year.GroupBy(r => r.Semester))
         {
             var totals = sem.Where(x => x.Total != null).Select(x => x.Total!.Value).ToList();
+            var pos = positions.FirstOrDefault(p => p.AcademicYear == year.Key.AcademicYear && p.Semester == sem.Key);
             <div class="card-body flush table-wrap">
                 <div style="padding:14px 20px 4px">
                     <b>Semester @sem.Key</b>
                     @if (totals.Any())
                     {
                         <span class="muted small"> · average total @totals.Average().ToString("0.#")</span>
+                    }
+                    @if (pos != null)
+                    {
+                        <span class="badge ok" style="margin-left:10px">Position @Ui.Ordinal(pos.Position) of @pos.OutOf</span><span class="muted small"> · total score @pos.Total.ToString("0.#")</span>
                     }
                 </div>
                 <table class="data">
@@ -56,24 +71,25 @@ else if (!Model.Any())
                                 <td class="num">@(r.Midterm?.ToString("0.#") ?? "—")</td>
                                 <td class="num">@(r.Final?.ToString("0.#") ?? "—")</td>
                                 <td class="num"><b>@(r.Total?.ToString("0.#") ?? "—")</b></td>
-                                <td>@if (r.Total != null) {
-                                    <span class="badge info">@r.Grade</span>
-                                } else
-                                {
+                                <td>
+                                    @if (r.Total != null)
+                                    {
+                                        <span class="badge info">@r.Grade</span>
+                                    }
+                                    else
+                                    {
 
-                                    <span class="muted small">awaiting final</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-</div>
+                                        <span class="muted small">awaiting final</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 }
-
-
 
 
 
