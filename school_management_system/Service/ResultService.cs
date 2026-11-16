@@ -11,6 +11,8 @@ namespace school_management_system.Service;
 public record SemesterResultRow(
     string AcademicYear, int FormLevel, int Semester, string Subject, string? Teacher,
     decimal? Midterm, decimal? Final, decimal? Total, string Grade);
+
+public record PositionInfo(string AcademicYear, int Semester, int Position, int OutOf, decimal Total);
 public class GradingService(AppDbContext db, IOptions<GradingOptions> opt)
 {
     /// <summary>A midterm exam collects the "class score"; a final exam collects the "exam score".</summary>
@@ -120,6 +122,8 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
         await EnsureCoordinatorAsync(coordinatorTeacherId, classYearId);
         var (rs, size) = await GroupResultsAsync(classYearId, assessmentId);
         await EnsureCompleteAsync(classYearId, rs, size, ResultStatus.Submitted, "submitted by every subject teacher");
+        var semesterId = await db.Assessments.Where(a => a.Id == assessmentId).Select(a => a.SemesterId).SingleAsync();
+        await ComputePositionsAsync(semesterId, rs);   // every score is in, so the class positions are fixed now
         await MoveAsync(rs, ResultStatus.Reviewed, actorUserId);
     }
 
@@ -180,8 +184,37 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
 
 
 
+    /// <summary>The semester positions a student has earned, once the admin has published that semester.</summary>
+    public async Task<List<PositionInfo>> GetPublishedPositionsAsync(int studentId) =>
+        await (from p in db.SemesterPositions
+               where p.Enrollment.StudentId == studentId
+                     && db.Results.Any(r => r.EnrollmentId == p.EnrollmentId && r.Assessment.SemesterId == p.SemesterId
+                                            && r.Assessment.Type == AssessmentType.Final && r.Status == ResultStatus.Published)
+               select new PositionInfo(p.Enrollment.AcademicYear.Name, p.Semester.Number, p.Position, p.OutOf, p.TotalScore)).ToListAsync();
+
+
 
     // ---------- helpers ----------
+
+    /// <summary>Highest total first. Students on the same total share a position and the following positions are skipped
+    /// (two on 1st means the next is 3rd; three on 1st means the next is 4th).</summary>
+    private async Task ComputePositionsAsync(int semesterId, List<Result> rs)
+    {
+        var totals = rs.GroupBy(r => r.EnrollmentId)
+            .Select(g => new { EnrollmentId = g.Key, Total = g.Sum(r => (r.ClassScore ?? 0) + (r.ExamScore ?? 0)) }).ToList();
+        var ids = totals.Select(t => t.EnrollmentId).ToList();
+        var existing = await db.SemesterPositions.Where(p => p.SemesterId == semesterId && ids.Contains(p.EnrollmentId)).ToListAsync();
+        foreach (var t in totals)
+        {
+            var position = 1 + totals.Count(o => o.Total > t.Total);
+            var row = existing.FirstOrDefault(p => p.EnrollmentId == t.EnrollmentId);
+            if (row == null)
+                db.SemesterPositions.Add(new SemesterPosition { EnrollmentId = t.EnrollmentId, SemesterId = semesterId, TotalScore = t.Total, Position = position, OutOf = totals.Count });
+            else { row.TotalScore = t.Total; row.Position = position; row.OutOf = totals.Count; }
+        }
+    }
+
+
     private IQueryable<Enrollment> ActiveEnrollments(int classYearId) =>
         db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome != EnrollmentOutcome.Withdrawn && e.Student.Status != StudentStatus.Withdrawn);
 
@@ -207,7 +240,11 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
     }
 
 
-
+    //private async Task EnsureCoordinatorAsync(int teacherId, int classYearId)
+    //{
+    //    if (!await db.ClassYears.AnyAsync(c => c.Id == classYearId && c.CoordinatorTeacherId == teacherId))
+    //        throw new DomainException("You are not the coordinator of this class.");
+    //}
 
 
     private IQueryable<Result> ClassResults(int classYearId, int assessmentId) =>
@@ -227,10 +264,6 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
         if (rs.Count != students * classSubjects * groupSize || rs.Any(r => r.Status != required))
             throw new DomainException($"Every subject's midterm and final scores must be {what} first.");
     }
-
-
-
-
 
     private async Task MoveAsync(List<Result> rs, ResultStatus to, string actor, string? note = null)
     {

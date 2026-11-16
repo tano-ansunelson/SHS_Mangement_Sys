@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using school_management_system.Data;
 using school_management_system.Models;
 using school_management_system.Models.Domain;
@@ -66,6 +67,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
     }
 
 
+
     public async Task<IActionResult> Details(int id)
     {
         var s = await Db.Students.Include(x => x.User).Include(x => x.Course).SingleOrDefaultAsync(x => x.Id == id);
@@ -76,6 +78,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
                 Db.HallRegistrations.Where(h => h.StudentId == id && h.AcademicYearId == e.AcademicYearId).Select(h => h.Hall.Name).FirstOrDefault(),
                 Db.RoomAllocations.Where(a => a.StudentId == id && a.AcademicYearId == e.AcademicYearId).Select(a => a.Room.Number).FirstOrDefault())).ToListAsync();
         ViewData["Results"] = await results.GetPublishedForStudentAsync(id);
+        ViewData["Positions"] = await results.GetPublishedPositionsAsync(id);
         return View(s);
     }
 
@@ -110,6 +113,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
         CopyPaths(vm, s);
         return View("Form", await Load(vm));
     }
+
 
 
 
@@ -230,6 +234,7 @@ public class StudentsController(AppDbContext db, StudentService students, Accoun
             MotherPhotoPath = await Save(vm.MotherPhoto, "parents")
         };
     }
+
 
 
 

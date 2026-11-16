@@ -21,8 +21,6 @@ public class AppClaimsFactory(UserManager<ApplicationUser> um, RoleManager<Ident
 }
 
 
-
-
 public class AccountAdminService(UserManager<ApplicationUser> users)
 {
     /// <summary>Generates a new temporary password and forces a change at next login.</summary>
@@ -51,12 +49,17 @@ public class MatrixRow
     public string Number { get; set; } = "";
     public Dictionary<int, MatrixCell> Cells { get; set; } = new();
     public decimal? Average { get; set; }
+    public decimal? GrandTotal { get; set; }
+    public int? Position { get; set; }
 }
 public class MatrixVm
 {
     public int ClassYearId { get; set; }
     public int AssessmentId { get; set; }
     public bool IsFinal { get; set; }
+    public bool HasPositions { get; set; }
+    public bool PositionsPreview { get; set; }
+    public int OutOf { get; set; }
     public string ClassName { get; set; } = "";
     public string AssessmentTitle { get; set; } = "";
     public List<SubjectRef> Subjects { get; set; } = new();
@@ -68,7 +71,7 @@ public class MatrixService(AppDbContext db, GradingService grading)
     public async Task<MatrixVm> BuildAsync(int classYearId, int assessmentId)
     {
         var cy = await db.ClassYears.Include(c => c.SchoolClass).ThenInclude(s => s.Course)
-                   .SingleOrDefaultAsync(c => c.Id == classYearId) ?? throw new DomainException("Class not found.");
+                     .SingleOrDefaultAsync(c => c.Id == classYearId) ?? throw new DomainException("Class not found.");
         var asm = await db.Assessments.Include(a => a.Semester).SingleOrDefaultAsync(a => a.Id == assessmentId)
                   ?? throw new DomainException("Assessment not found.");
         var isFinal = asm.Type == AssessmentType.Final;
@@ -81,8 +84,8 @@ public class MatrixService(AppDbContext db, GradingService grading)
             AssessmentTitle = $"Semester {asm.Semester.Number} · {asm.Title}"
         };
         vm.Subjects = await db.ClassSubjects.Where(s => s.SchoolClassId == cy.SchoolClassId)
-          .OrderBy(s => s.Subject.Name).Select(s => new SubjectRef(s.SubjectId, s.Subject.Name)).ToListAsync();
-        var students = await db.Enrollments.Where(e => e.ClassYearId == classYearId)
+            .OrderBy(s => s.Subject.Name).Select(s => new SubjectRef(s.SubjectId, s.Subject.Name)).ToListAsync();
+        var students = await db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome != EnrollmentOutcome.Withdrawn && e.Student.Status != StudentStatus.Withdrawn)
             .OrderBy(e => e.Student.User.FullName)
             .Select(e => new { e.Id, Name = e.Student.User.FullName, Number = e.Student.StudentNumber }).ToListAsync();
         var results = await db.Results.Where(r => r.Enrollment.ClassYearId == classYearId && r.AssessmentId == assessmentId)
@@ -94,6 +97,7 @@ public class MatrixService(AppDbContext db, GradingService grading)
                 .Select(r => new { r.EnrollmentId, r.SubjectId, r.ClassScore }).ToListAsync()
             : null;
         var boundaries = await grading.GetBoundariesAsync();
+
         foreach (var s in students)
         {
             var row = new MatrixRow { EnrollmentId = s.Id, Name = s.Name, Number = s.Number };
@@ -112,6 +116,32 @@ public class MatrixService(AppDbContext db, GradingService grading)
             row.Average = numbers.Count == 0 ? null : Math.Round(numbers.Average(), 1);
             vm.Rows.Add(row);
         }
+
+        // positions: stored once the coordinator has sent the class to the admin; before that, a preview when every score is in
+        var stored = isFinal
+            ? await db.SemesterPositions.Where(p => p.SemesterId == asm.SemesterId && p.Enrollment.ClassYearId == classYearId).ToListAsync()
+            : new List<SemesterPosition>();
+        if (stored.Count > 0)
+        {
+            foreach (var row in vm.Rows)
+            {
+                var p = stored.FirstOrDefault(x => x.EnrollmentId == row.EnrollmentId);
+                if (p != null) { row.Position = p.Position; row.GrandTotal = p.TotalScore; vm.OutOf = p.OutOf; }
+            }
+            vm.HasPositions = true;
+        }
+        else if (isFinal && vm.Rows.Count > 0 && vm.Subjects.Count > 0)
+        {
+            var needsMidterm = await db.Assessments.AnyAsync(a => a.SemesterId == asm.SemesterId && a.Type == AssessmentType.Midterm);
+            bool Complete(MatrixRow r) => vm.Subjects.All(sub => r.Cells.TryGetValue(sub.Id, out var cell) && cell.Score != null && (!needsMidterm || cell.Total != null));
+            if (vm.Rows.All(Complete))
+            {
+                foreach (var row in vm.Rows) row.GrandTotal = row.Cells.Values.Sum(cell => cell.Total ?? cell.Score ?? 0);
+                foreach (var row in vm.Rows) row.Position = 1 + vm.Rows.Count(o => o.GrandTotal > row.GrandTotal);
+                vm.OutOf = vm.Rows.Count; vm.PositionsPreview = true;
+            }
+        }
+        vm.Rows = vm.Rows.OrderBy(r => r.Position ?? int.MaxValue).ThenBy(r => r.Name).ToList();
         return vm;
     }
 
