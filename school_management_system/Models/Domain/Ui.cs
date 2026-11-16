@@ -26,6 +26,7 @@ public static class Ui
     public static string Tint(int i) => $"var(--c{i % 6 + 1})";
     public static string Initials(string? name) =>
         string.IsNullOrWhiteSpace(name) ? "?" : string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpper(p[0])));
+    public static string Ordinal(int n) => n % 100 is >= 11 and <= 13 ? n + "th" : (n % 10) switch { 1 => n + "st", 2 => n + "nd", 3 => n + "rd", _ => n + "th" };
     public static string Pct(int part, int whole) => whole == 0 ? "0" : Math.Min(100, part * 100 / whole).ToString();
 }
 

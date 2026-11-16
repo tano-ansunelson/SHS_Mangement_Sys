@@ -735,6 +735,40 @@ namespace school_management_system.Migrations
                     b.ToTable("Semesters");
                 });
 
+            modelBuilder.Entity("school_management_system.Models.SemesterPosition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EnrollmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OutOf")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SemesterId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalScore")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SemesterId");
+
+                    b.HasIndex("EnrollmentId", "SemesterId")
+                        .IsUnique();
+
+                    b.ToTable("SemesterPositions");
+                });
+
             modelBuilder.Entity("school_management_system.Models.Student", b =>
                 {
                     b.Property<int>("Id")
@@ -1272,6 +1306,25 @@ namespace school_management_system.Migrations
                         .IsRequired();
 
                     b.Navigation("AcademicYear");
+                });
+
+            modelBuilder.Entity("school_management_system.Models.SemesterPosition", b =>
+                {
+                    b.HasOne("school_management_system.Models.Enrollment", "Enrollment")
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("school_management_system.Models.Semester", "Semester")
+                        .WithMany()
+                        .HasForeignKey("SemesterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Enrollment");
+
+                    b.Navigation("Semester");
                 });
 
             modelBuilder.Entity("school_management_system.Models.Student", b =>

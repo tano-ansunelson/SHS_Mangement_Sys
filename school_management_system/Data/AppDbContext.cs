@@ -3,8 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using school_management_system.Models;
 
 namespace school_management_system.Data;
-    public class AppDbContext(DbContextOptions<AppDbContext> options):IdentityDbContext<ApplicationUser>(options)
-    {
+
+public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<ApplicationUser>(options)
+{
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Course> Courses => Set<Course>();
@@ -26,6 +27,7 @@ namespace school_management_system.Data;
     public DbSet<Result> Results => Set<Result>();
     public DbSet<ResultAuditLog> ResultAuditLogs => Set<ResultAuditLog>();
     public DbSet<GradeBoundary> GradeBoundaries => Set<GradeBoundary>();
+    public DbSet<SemesterPosition> SemesterPositions => Set<SemesterPosition>();
     public DbSet<PromotionRecommendation> PromotionRecommendations => Set<PromotionRecommendation>();
     public DbSet<IdCounter> IdCounters => Set<IdCounter>();
 
@@ -98,6 +100,9 @@ namespace school_management_system.Data;
             e.Property(x => x.RowVersion).IsRowVersion();
         });
         b.Entity<GradeBoundary>().Property(x => x.MinScore).HasPrecision(5, 2);
+        b.Entity<SemesterPosition>().HasIndex(x => new { x.EnrollmentId, x.SemesterId }).IsUnique();
+        b.Entity<SemesterPosition>().Property(x => x.TotalScore).HasPrecision(8, 2);
+
     }
 }
 

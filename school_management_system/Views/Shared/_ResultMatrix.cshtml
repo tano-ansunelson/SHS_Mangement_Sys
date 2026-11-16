@@ -3,6 +3,15 @@
 @model MatrixVm
 <div class="card">
     <div class="card-head"><h2>@Model.ClassName</h2><span class="muted">@Model.AssessmentTitle · @(Model.IsFinal ? "final exam score, with the midterm and the semester total" : "midterm score")</span></div>
+    @if (Model.HasPositions)
+    {
+        <div class="alert info" style="margin:16px 20px 0">Class positions are fixed. Students are listed from 1st position down; students on the same total share a position and the next positions are skipped.</div>
+    }
+    else if (Model.PositionsPreview)
+    {
+
+        <div class="alert info" style="margin:16px 20px 0">Every score is in. These positions are a <b>preview</b>: they become final when the class is sent to the admin.</div>
+    }
     <div class="card-body flush table-wrap">
         @if (Model.Rows.Count == 0)
         {
@@ -11,37 +20,55 @@
         else
         {
             <table class="data">
-                <thead><tr><th>Student</th>@foreach (var s in Model.Subjects) {
-                    <th class="num">@s.Name</th>
+                <thead><tr>@if (Model.IsFinal) {
+                    <th class="num">Position</th>
                 }
-                <th class="num">Average</th></tr></thead>
-                <tbody>
-                    @foreach (var r in Model.Rows)
-                    {
-                        <tr>
-                            <td><b>@r.Name</b><div class="muted small">@r.Number</div></td>
-                            @foreach (var s in Model.Subjects)
-                            {
-                                if (r.Cells.TryGetValue(s.Id, out var c) && c.Score != null)
-                                {
-                                    <td class="num">
-                                        <span class="badge @Ui.Status(c.Status)" title="@c.Status">@c.Score.Value.ToString("0.#")</span>
-                                        @if (Model.IsFinal)
-                                        {
-                                            <div class="muted small">Midterm @(c.Midterm?.ToString("0.#") ?? "—")@(c.Total != null ? " · Total " + c.Total.Value.ToString("0.#") + " · " + c.Grade : "")</div>
-                                        }
-                                    </td>
-                                }
-                                else
-                                {
-                                    <td class="num muted">—</td>
-                                }
+                <th>Student</th>@foreach (var s in Model.Subjects) {
+                <th class="num">@s.Name</th>
+            }
+            @if (Model.IsFinal)
+            {
+                <th class="num">Total score</th>
+            }
+            <th class="num">Average</th></tr></thead>
+            <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        @if (Model.IsFinal)
+                        {
+                            <td class="num"><b>@(r.Position != null ? Ui.Ordinal(r.Position.Value) : "—")</b>@if (r.Position != null && Model.OutOf > 0) {
+                                <div class="muted small">of @Model.OutOf</div>
                             }
-                            <td class="num"><b>@(r.Average?.ToString("0.#") ?? "—")</b></td>
-                        </tr>
+                        </td>
                     }
-                </tbody>
-            </table>
-        }
-    </div>
+                    <td><b>@r.Name</b><div class="muted small">@r.Number</div></td>
+                    @foreach (var s in Model.Subjects)
+                    {
+                        if (r.Cells.TryGetValue(s.Id, out var c) && c.Score != null)
+                        {
+                            <td class="num">
+                                <span class="badge @Ui.Status(c.Status)" title="@c.Status">@c.Score.Value.ToString("0.#")</span>
+                                @if (Model.IsFinal)
+                                {
+                                    <div class="muted small">Midterm @(c.Midterm?.ToString("0.#") ?? "—")@(c.Total != null ? " · Total " + c.Total.Value.ToString("0.#") + " · " + c.Grade : "")</div>
+                                }
+                            </td>
+                        }
+                        else
+                        {
+                            <td class="num muted">—</td>
+                        }
+                    }
+                    @if (Model.IsFinal)
+                    {
+                        <td class="num"><b>@(r.GrandTotal?.ToString("0.#") ?? "—")</b></td>
+                    }
+                    <td class="num"><b>@(r.Average?.ToString("0.#") ?? "—")</b></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+</div>
 </div>
