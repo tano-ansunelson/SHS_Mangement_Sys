@@ -59,7 +59,7 @@ public class AccountController(SignInManager<ApplicationUser> signIn, UserManage
 
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> ChangePassword(ChangePasswordVm vm) 
+    public async Task<IActionResult> ChangePassword(ChangePasswordVm vm)
     {
         var u = await users.GetUserAsync(User);
         if (u == null) return RedirectToAction(nameof(Login));
@@ -71,6 +71,8 @@ public class AccountController(SignInManager<ApplicationUser> signIn, UserManage
                 ModelState.AddModelError("", e.Description);
             return View(vm);
         }
+
+
 
         u.MustChangePassword = false;
         await users.UpdateAsync(u);

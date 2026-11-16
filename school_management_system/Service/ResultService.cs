@@ -13,7 +13,6 @@ public record SemesterResultRow(
     decimal? Midterm, decimal? Final, decimal? Total, string Grade);
 public class GradingService(AppDbContext db, IOptions<GradingOptions> opt)
 {
-
     /// <summary>A midterm exam collects the "class score"; a final exam collects the "exam score".</summary>
     public decimal MaxFor(AssessmentType type) => type == AssessmentType.Midterm ? opt.Value.MaxClassScore : opt.Value.MaxExamScore;
 
@@ -29,7 +28,6 @@ public class GradingService(AppDbContext db, IOptions<GradingOptions> opt)
 
     public static string GradeFor(IReadOnlyList<GradeBoundary> boundaries, decimal total) =>
         boundaries.FirstOrDefault(g => g.MinScore <= total)?.Grade ?? "F9";
-
 }
 
 
@@ -79,7 +77,8 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
         await db.SaveChangesAsync();
     }
 
-    /// <summary>Teacher pushes one subject's scores for a whole class. Every student must have a score.</summary>
+    /// <summary>Sends one subject's midterm AND final scores for a class to the coordinator in one go. A midterm is never
+    /// sent on its own: it is saved while the semester runs and travels with the final exam scores.</summary>
     public async Task SubmitAsync(int teacherId, int classYearId, int subjectId, int assessmentId, string actorUserId)
     {
         if (!await db.TeachingAssignments.AnyAsync(t => t.TeacherId == teacherId && t.SubjectId == subjectId && t.ClassYearId == classYearId))
@@ -113,6 +112,8 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
         await MoveAsync(rs, ResultStatus.Returned, actorUserId, note);   // midterm and final both go back so the teacher can fix either
     }
 
+
+
     /// <summary>Coordinator confirms the whole class (all subjects, midterm and final) and sends it to admin.</summary>
     public async Task ReviewAsync(int coordinatorTeacherId, int classYearId, int assessmentId, string actorUserId)
     {
@@ -121,6 +122,7 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
         await EnsureCompleteAsync(classYearId, rs, size, ResultStatus.Submitted, "submitted by every subject teacher");
         await MoveAsync(rs, ResultStatus.Reviewed, actorUserId);
     }
+
 
     // ---------- Admin ----------
     public async Task ApproveAsync(int classYearId, int assessmentId, string adminUserId)
@@ -181,8 +183,7 @@ public class ResultWorkflowService(AppDbContext db, GradingService grading)
 
     // ---------- helpers ----------
     private IQueryable<Enrollment> ActiveEnrollments(int classYearId) =>
-        db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome == EnrollmentOutcome.Pending && e.Student.Status == StudentStatus.Active);
-
+        db.Enrollments.Where(e => e.ClassYearId == classYearId && e.Outcome != EnrollmentOutcome.Withdrawn && e.Student.Status != StudentStatus.Withdrawn);
 
     /// <summary>The final exam plus the same semester's midterm (when one exists). Both move through the workflow as one.</summary>
     private async Task<(AssessmentType Type, int SemesterId, List<int> GroupIds)> GroupAsync(int assessmentId)
